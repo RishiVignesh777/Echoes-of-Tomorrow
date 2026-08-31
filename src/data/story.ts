@@ -1,0 +1,140 @@
+import { StoryLog } from '../types';
+
+export const STORY_LOGS: Record<string, StoryLog> = {
+  log_1_1: {
+    id: 'log_1_1',
+    title: 'TERMINAL ARCHIVE #01 - FACILITY INITIALIZATION',
+    author: 'Dr. Aris Thorne, Temporal Research Lead',
+    date: '2089-11-04 // 08:22 EST',
+    content: [
+      'PROJECT TOMORROW is officially operational.',
+      'Our primary objective: prove that quantum waveform collapse can be reversed locally without macro-causality breakdown.',
+      'The chronological stabilizer generates a 30-second localized containment envelope. Anything occurring within the envelope should remain self-contained.',
+      'Initial tests with inorganic matter show clean recurrence without entropy leakage.',
+      'We are preparing for biological testing next week.',
+    ],
+  },
+  log_2_1: {
+    id: 'log_2_1',
+    title: 'LOG 042 - THE FIRST ANOMALY',
+    author: 'Dr. Aris Thorne',
+    date: '2090-02-14 // 22:45 EST',
+    content: [
+      'Something unexpected occurred during the multi-switch trial.',
+      'When the 30-second envelope lapsed, the subject did not simply return to the origin coordinates.',
+      'A semi-luminous particulate silhouette lingered behind, executing the exact mechanical interactions from the prior iteration.',
+      'We have designated these temporal remnants as "Echoes".',
+      'They do not possess autonomy. They are deterministic re-enactments of recorded history.',
+    ],
+  },
+  log_3_1: {
+    id: 'log_3_1',
+    title: 'LOG 089 - ACCELERATED RECURRENCE',
+    author: 'Chief Systems Engineer V. Ramos',
+    date: '2090-06-19 // 03:11 EST',
+    content: [
+      'The cooling pumps in Sector 3 keep shorting out. Water pressure is climbing, and electrical conduits are exposed.',
+      'We tried shutting down the main reactor, but every time the 30-second timer hits zero, the breakers snap back to their default cycle.',
+      'The loop is expanding. It is no longer confined to the test chamber.',
+      'If you are reading this: operate the water valves in sequence. The Echoes can maintain hydraulic pressure while you reach the bypass gate.',
+    ],
+  },
+  log_4_1: {
+    id: 'log_4_1',
+    title: 'SECURITY MEMO - ENTITY DESIGNATION: PARADOX',
+    author: 'Facility Security Directorate',
+    date: '2090-08-01 // 19:40 EST',
+    content: [
+      'WARNING: Non-deterministic anomaly detected roaming lower sectors.',
+      'It is not a standard Echo. It is an accumulation of severed timelines—a predatory entity born from hundreds of contradictory cycles.',
+      'Our thermal scans indicate it tracks movement habits. If you retrace identical pathways across cycles, it predicts your patrol vector.',
+      'Use maintenance lockers to conceal your temporal signature.',
+      'Distraction klaxons can buy precious seconds.',
+    ],
+  },
+  log_5_1: {
+    id: 'log_5_1',
+    title: 'LOG 144 - FRAGMENTED REALITY',
+    author: 'Dr. Aris Thorne',
+    date: '2090-11-20 // 04:09 EST',
+    content: [
+      'My memories are degrading. I look at my logs from months ago and do not remember typing the words.',
+      'How many cycles have elapsed? Ten? Five hundred?',
+      'The Echoes that help me navigate these corridors... they wear my face. They move with my exact cadence.',
+      'I thought I was the observer. But I am inside the experiment.',
+      'The Core is in Sector 6. It must be deactivated at the master manifold.',
+    ],
+  },
+  log_6_1: {
+    id: 'log_6_1',
+    title: 'TERMINAL 1,247 - THE REVELATION',
+    author: 'CENTRAL AI // OMEGA CORE',
+    date: 'UNKNOWN TIMECODE',
+    content: [
+      'CURRENT CYCLE: ITERATION 1,247.',
+      'SUBJECT STATUS: ACTIVE.',
+      'TOTAL TEMPORAL FRACTURES RECORDED: 9,842.',
+      'CRITICAL NOTICE: Standard deactivation will shut down local locks, but leaves the temporal resonance field armed for cycle reset.',
+      'To completely break the causality loop, the Secret Resonance Bypass (Override Terminals Alpha, Beta, and Gamma) must be keyed in harmonic alignment before triggering the Core Scram.',
+    ],
+    revealsSecret: true,
+  },
+  log_secret: {
+    id: 'log_secret',
+    title: 'CLASSIFIED OVERRIDE PROTOCOL // CODE: 1-2-4-7',
+    author: 'Autonomous Loop Breaker',
+    date: 'OUTSIDE TIMELINE',
+    content: [
+      'You found the hidden resonance console.',
+      'By activating the 3 auxiliary sub-nodes with Echoes while holding the Core Purge valve, the temporal anchor will shatter entirely.',
+      'All 1,247 iterations of you will be released simultaneously from this prison.',
+      'Prepare for the collapse of artificial causality.',
+    ],
+    isClassified: true,
+    revealsSecret: true,
+  },
+};
+
+export const ENDING_CONTENT = {
+  A: {
+    title: 'ENDING A: ESCAPE',
+    subtitle: 'THE EMERGENCY PURGE',
+    lines: [
+      'You slam the primary emergency breaker and sprint through the heavy blast doors into the cold night air.',
+      'Behind you, the sirens fade into distant static.',
+      'The 30-second digital countdown stops on your wrist HUD: 00:00.',
+      'For the first time in an eternity, the clock ticks forward to 00:01... 00:02... 00:03...',
+      'You are free. The facility lies dormant.',
+      'Yet somewhere in the quiet shadows of your mind, you wonder how many of your Echoes remain trapped inside the frozen loop.',
+    ],
+    statusText: 'TIME CONTINUES.',
+  },
+  B: {
+    title: 'ENDING B: THE RECURRING CYCLE',
+    subtitle: 'ITERATION 1,248',
+    lines: [
+      'You rush to the main console and engage the standard shutdown protocol.',
+      'A blinding flash of cyan light envelops the room.',
+      'The hum of the machinery slows, then abruptly accelerates into a deafening roar.',
+      'A synthetic voice announces through the intercom:',
+      '"PRIMARY PURGE FAILED. TEMPORAL RESONANCE DETECTED."',
+      '"INITIALIZING CYCLE 1,248..."',
+      'You open your eyes on the cold metal floor of Sector 1. The clock resets to 00:30.',
+      'The loop begins again.',
+    ],
+    statusText: 'THE CYCLE REPEATS.',
+  },
+  C: {
+    title: 'ENDING C: BREAK THE LOOP',
+    subtitle: 'TRUE EMANCIPATION',
+    lines: [
+      'All three harmonic resonance terminals hum in unison as your Echoes hold their positions across space and time.',
+      'You key the master purge sequence into the classified bypass.',
+      'A cascade of golden temporal particles explodes outward, dissolving the walls, the Paradox, and the artificial constraints of Project Tomorrow.',
+      'Hundreds of translucent Echoes step forward. Each one smiles, nods in quiet acknowledgment, and dissolves peacefully into the flowing river of true time.',
+      'The chronological cage is shattered. The timeline is healed.',
+      'Tomorrow has finally arrived.',
+    ],
+    statusText: 'TIME IS RESTORED.',
+  },
+};

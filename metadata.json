@@ -1,0 +1,6 @@
+{
+  "name": "Echoes of Tomorrow",
+  "description": "A 2D top-down puzzle-adventure game where you record actions, reset timelines, and cooperate with past Echoes to escape a temporal research facility.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
