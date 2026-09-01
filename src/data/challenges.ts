@@ -1,0 +1,58 @@
+import { EchoChallenge } from '../types';
+
+export const ECHO_CHALLENGES: EchoChallenge[] = [
+  {
+    id: 'chall_echo_limit_1',
+    title: 'ECHO LIMIT: MINIMALIST',
+    description: 'Complete Sector 02 using a maximum of 2 Echoes.',
+    levelId: 2,
+    type: 'limit',
+    param: 2,
+    rewardBadge: 'ECHO ECONOMIST',
+  },
+  {
+    id: 'chall_echo_limit_2',
+    title: 'ECHO LIMIT: MASTER GAUNTLET',
+    description: 'Complete Sector 05 using no more than 3 Echoes total.',
+    levelId: 5,
+    type: 'limit',
+    param: 3,
+    rewardBadge: 'CHRONO SURGEON',
+  },
+  {
+    id: 'chall_perfect_loop_1',
+    title: 'PERFECT LOOP: INITIAL SPRINT',
+    description: 'Complete Sector 01 on your very first cycle without any resets (0 Echoes created).',
+    levelId: 1,
+    type: 'perfect_loop',
+    param: 0,
+    rewardBadge: 'SOLO STRIDER',
+  },
+  {
+    id: 'chall_perfect_loop_2',
+    title: 'PERFECT LOOP: STEALTH RUN',
+    description: 'Navigate the Paradox in Sector 04 in a single pristine loop without resetting.',
+    levelId: 4,
+    type: 'perfect_loop',
+    param: 0,
+    rewardBadge: 'GHOST WALKER',
+  },
+  {
+    id: 'chall_one_second_1',
+    title: 'ONE SECOND: BUZZER BEATER',
+    description: 'Step into the exit portal with less than 1.5 seconds remaining on the clock.',
+    levelId: 1,
+    type: 'one_second',
+    param: 1.5,
+    rewardBadge: 'EDGE OF EXTINCTION',
+  },
+  {
+    id: 'chall_one_second_2',
+    title: 'ONE SECOND: CORE SCRAM CLUTCH',
+    description: 'Trigger the Master Core shutdown in Sector 06 in the final 1.0 second before collapse.',
+    levelId: 6,
+    type: 'one_second',
+    param: 1.0,
+    rewardBadge: 'ZERO-HOUR ARCHITECT',
+  },
+];

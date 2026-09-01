@@ -16,6 +16,8 @@ interface GameCanvasProps {
   onOpenTerminal: (log: StoryLog) => void;
   onPauseGame: () => void;
   onCheckpointReached: () => void;
+  onCollectMemory?: (memoryId: string) => void;
+  onCollectArtifact?: (artifactId: string) => void;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -26,6 +28,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onOpenTerminal,
   onPauseGame,
   onCheckpointReached,
+  onCollectMemory,
+  onCollectArtifact,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -77,6 +81,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       animFrame: 0,
       phaseGlitch: 0,
     })),
+    observerEntity: (currentLevelIndex === 9 || currentLevelIndex === 12
+      ? {
+          x: 18,
+          y: 3,
+          dialogue: 'Every cycle is recorded in the static...',
+          encountered: false,
+          vanishProgress: 0,
+        }
+      : null),
+    currentRoomState: 'A' as 'A' | 'B' | 'C',
     camera: { x: 0, y: 0 },
     keys: {} as Record<string, boolean>,
     timeRemaining: 30.0,
@@ -338,6 +352,102 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           return;
         }
 
+        // Echo Transfer Console (Update 1.1)
+        if (obj.type === 'echo_transfer_console' && obj.linkedPodId) {
+          const targetPod = s.objects.find((o) => o.id === obj.linkedPodId);
+          if (targetPod) {
+            s.player.x = targetPod.x;
+            s.player.y = targetPod.y;
+            targetPod.state = true;
+            soundManager.playEchoTransfer();
+            triggerNotification('QUANTUM ECHO TRANSFER COMPLETE');
+            if (settings.screenShake) {
+              s.screenShake = 10;
+            }
+            recorderRef.current.recordFrame(
+              s.timelineElapsedMs,
+              s.player.x,
+              s.player.y,
+              s.player.dir,
+              false,
+              'interact',
+              obj.id
+            );
+            return;
+          }
+        }
+
+        // Temporal Decoy (Update 1.2)
+        if (obj.type === 'temporal_decoy') {
+          if (!obj.state) {
+            obj.state = true;
+            soundManager.playDecoyTrigger();
+            triggerNotification('TEMPORAL DECOY BROADCASTING PULSE');
+            // Lure paradox enemies to decoy coordinates
+            s.paradoxEnemies.forEach((p) => {
+              p.targetX = obj.x;
+              p.targetY = obj.y;
+              p.state = 'investigating';
+              p.investigateTimer = 8.0;
+            });
+            recorderRef.current.recordFrame(
+              s.timelineElapsedMs,
+              s.player.x,
+              s.player.y,
+              s.player.dir,
+              false,
+              'interact',
+              obj.id
+            );
+            return;
+          }
+        }
+
+        // Chrono-Phase Shifter (Update 2.0 Timeline Instability)
+        if (obj.type === 'chrono_phase_shifter') {
+          const states: ('A' | 'B' | 'C')[] = ['A', 'B', 'C'];
+          const nextState = states[(states.indexOf(s.currentRoomState) + 1) % states.length];
+          s.currentRoomState = nextState;
+          obj.state = !obj.state;
+          soundManager.playTimelineShift();
+          triggerNotification(`REALITY PHASE SHIFT: STATE [${nextState}]`);
+          if (settings.screenShake) {
+            s.screenShake = 12;
+          }
+          recorderRef.current.recordFrame(
+            s.timelineElapsedMs,
+            s.player.x,
+            s.player.y,
+            s.player.dir,
+            false,
+            'interact',
+            obj.id
+          );
+          return;
+        }
+
+        // Collect Memory Fragment (Update 1.3)
+        if (obj.type === 'memory_fragment' && !obj.state) {
+          obj.state = true;
+          soundManager.playMemoryFragmentCollect();
+          triggerNotification(obj.label || 'MEMORY FRAGMENT RECOVERED');
+          if (onCollectMemory) {
+            onCollectMemory(obj.memoryId || obj.id);
+          }
+          return;
+        }
+
+        // Collect Temporal Artifact (Update 2.0)
+        if (obj.type === 'temporal_artifact' && !obj.state) {
+          obj.state = true;
+          soundManager.playArtifactCollect();
+          triggerNotification(obj.label || 'TEMPORAL ARTIFACT ACQUIRED');
+          if (onCollectArtifact) {
+            onCollectArtifact(obj.artifactId || obj.id);
+          }
+          return;
+        }
+
         // Flip Timed Switch / Button / Water Pump
         if (obj.type === 'timed_switch' || obj.type === 'button' || obj.type === 'water_pump') {
           if (obj.type === 'timed_switch') {
@@ -563,6 +673,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         s.player,
         recorderRef.current.getEchoes(),
         dt,
+        s.currentRoomState,
         (sound) => {
           if (sound === 'plate_down') soundManager.playPlateDown();
           if (sound === 'plate_up') soundManager.playPlateUp();
@@ -570,9 +681,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       );
 
-      // Check if player stepped on active electric hazard
+      // Check if player stepped on active electric or steam hazard
       for (const obj of s.objects) {
-        if (obj.type === 'electric_hazard' && obj.state) {
+        if ((obj.type === 'electric_hazard' || obj.type === 'steam_hazard') && obj.state) {
           const pBox = { x: s.player.x, y: s.player.y, width: s.player.width, height: s.player.height };
           const hBox = { x: obj.x, y: obj.y, width: obj.width, height: obj.height };
           if (
@@ -582,6 +693,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             pBox.y + pBox.height > hBox.y
           ) {
             handlePlayerDeath();
+          }
+        }
+      }
+
+      // Check Observer Entity proximity and vanish
+      if (s.observerEntity && !s.observerEntity.encountered) {
+        const obsDist = Math.hypot(s.player.x - s.observerEntity.x, s.player.y - s.observerEntity.y);
+        if (obsDist <= 3.5) {
+          s.observerEntity.encountered = true;
+          soundManager.playObserverVanish();
+          triggerNotification(`THE OBSERVER: "${s.observerEntity.dialogue}"`);
+          if (settings.screenShake) {
+            s.screenShake = 14;
           }
         }
       }
@@ -672,7 +796,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             { x: renderCamX, y: renderCamY, rotation: renderCamRot },
             settings,
             s.resetFlash,
-            s.deathTimer
+            s.deathTimer,
+            s.currentRoomState,
+            s.observerEntity
           );
         }
       }

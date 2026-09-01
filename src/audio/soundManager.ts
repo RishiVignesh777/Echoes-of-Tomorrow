@@ -503,6 +503,166 @@ class SoundManager {
       });
     });
   }
+
+  // --- NEW UPDATE 1.1 - 2.0 AUDIO EFFECTS ---
+
+  public playEchoTransfer() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.35);
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.35);
+  }
+
+  public playDecoyTrigger() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    // Multi-pulse temporal sonar chirp
+    [0, 0.15, 0.3].forEach((delay) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const start = now + delay;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, start);
+      osc.frequency.exponentialRampToValueAtTime(300, start + 0.12);
+
+      gain.gain.setValueAtTime(0.2, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(start);
+      osc.stop(start + 0.12);
+    });
+  }
+
+  public playMemoryFragmentCollect() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    const notes = [587.33, 739.99, 880.0, 1174.66]; // D-major bright shimmer
+    notes.forEach((freq, idx) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const start = now + idx * 0.07;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0.22, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.6);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(start);
+      osc.stop(start + 0.6);
+    });
+  }
+
+  public playArtifactCollect() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    const chord = [392.0, 493.88, 587.33, 783.99, 987.77];
+    chord.forEach((freq, idx) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const start = now + idx * 0.08;
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0.25, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.85);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(start);
+      osc.stop(start + 0.85);
+    });
+  }
+
+  public playTimelineShift() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.linearRampToValueAtTime(600, now + 0.25);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.6);
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.6);
+  }
+
+  public playObserverVanish() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.5);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.5);
+  }
+
+  public playMedalAward() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    const fanfare = [523.25, 659.25, 783.99, 1046.5];
+    fanfare.forEach((freq, idx) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const start = now + idx * 0.12;
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0.2, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.6);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(start);
+      osc.stop(start + 0.6);
+    });
+  }
 }
 
 export const soundManager = new SoundManager();

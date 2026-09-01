@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Play, RotateCcw, Compass, Settings, HelpCircle, ShieldAlert, Award } from 'lucide-react';
+import { Play, RotateCcw, Compass, Settings, HelpCircle, ShieldAlert, Award, Sparkles, BookOpen, History, Flame } from 'lucide-react';
 import { GameSettings, SavedGame } from '../types';
 import { LEVELS } from '../data/levels';
+import { CURRENT_GAME_VERSION } from '../data/updates';
 import { soundManager } from '../audio/soundManager';
 
 interface MainMenuProps {
@@ -10,6 +11,8 @@ interface MainMenuProps {
   onStartGame: (levelIndex?: number) => void;
   onUpdateSettings: (settings: GameSettings) => void;
   onResetSave: () => void;
+  onOpenUpdateLog: () => void;
+  onOpenCodex: () => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({
@@ -18,6 +21,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   onStartGame,
   onUpdateSettings,
   onResetSave,
+  onOpenUpdateLog,
+  onOpenCodex,
 }) => {
   const [view, setView] = useState<'main' | 'levels' | 'settings' | 'help'>('main');
 
@@ -33,10 +38,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.12)_0%,rgba(0,0,0,0.95)_75%)] pointer-events-none" />
 
       {/* Retro Title Box */}
-      <div className="z-10 text-center mb-8 relative">
+      <div className="z-10 text-center mb-6 relative">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-950/80 border border-cyan-500/50 rounded-full text-cyan-400 text-xs font-semibold uppercase tracking-widest mb-3 shadow-lg">
           <Compass className="w-3.5 h-3.5 animate-spin" />
           <span>PROJECT TOMORROW // TEMPORAL RECURRENCE</span>
+          <button
+            onClick={onOpenUpdateLog}
+            className="ml-2 px-2 py-0.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/50 rounded-full text-[10px] font-bold transition flex items-center gap-1"
+          >
+            <Sparkles className="w-3 h-3 text-cyan-300" />
+            <span>v{CURRENT_GAME_VERSION}</span>
+          </button>
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-pixel font-bold text-transparent bg-clip-text bg-gradient-to-b from-cyan-200 via-teal-300 to-cyan-500 tracking-wider drop-shadow-[0_0_25px_rgba(6,182,212,0.4)]">
@@ -49,7 +61,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
       {/* Main Action Menu */}
       {view === 'main' && (
-        <div className="z-10 w-full max-w-sm flex flex-col gap-3">
+        <div className="z-10 w-full max-w-sm flex flex-col gap-2.5">
           {savedGame && savedGame.currentLevelIndex > 0 ? (
             <button
               id="menu-continue-btn"
@@ -76,7 +88,25 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             className="w-full py-2.5 px-6 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-200 border border-neutral-800 font-semibold rounded-xl transition flex items-center justify-center gap-2 active:scale-95"
           >
             <Compass className="w-4 h-4 text-cyan-400" />
-            <span>SECTOR SELECT</span>
+            <span>SECTOR SELECT (12 SECTORS)</span>
+          </button>
+
+          <button
+            id="menu-codex-btn"
+            onClick={onOpenCodex}
+            className="w-full py-2.5 px-6 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-200 border border-teal-500/30 hover:border-teal-500/70 font-semibold rounded-xl transition flex items-center justify-center gap-2 active:scale-95"
+          >
+            <BookOpen className="w-4 h-4 text-teal-400" />
+            <span>FACILITY CODEX & MEMORIES</span>
+          </button>
+
+          <button
+            id="menu-updates-btn"
+            onClick={onOpenUpdateLog}
+            className="w-full py-2.5 px-6 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-200 border border-neutral-800 font-semibold rounded-xl transition flex items-center justify-center gap-2 active:scale-95"
+          >
+            <History className="w-4 h-4 text-cyan-400" />
+            <span>UPDATE LOGS (v{CURRENT_GAME_VERSION})</span>
           </button>
 
           <button
@@ -104,7 +134,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   onResetSave();
                 }
               }}
-              className="mt-2 text-xs text-neutral-500 hover:text-red-400 transition text-center py-1"
+              className="mt-1 text-xs text-neutral-500 hover:text-red-400 transition text-center py-1"
             >
               Reset Saved Progress
             </button>
@@ -114,9 +144,21 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
       {/* Sector Level Select View */}
       {view === 'levels' && (
-        <div className="z-10 w-full max-w-xl bg-neutral-900/90 border border-cyan-500/60 rounded-xl p-6 shadow-2xl">
-          <h3 className="text-lg font-pixel text-cyan-300 text-center mb-4">SECTOR SELECTION</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <div className="z-10 w-full max-w-2xl bg-neutral-900/95 border border-cyan-500/60 rounded-xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-neutral-800">
+            <div>
+              <h3 className="text-lg font-pixel text-cyan-300">FACILITY SECTOR SELECTION</h3>
+              <p className="text-xs text-neutral-400">12 Expansive Sectors across 6 Update Eras</p>
+            </div>
+            <button
+              onClick={() => setView('main')}
+              className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-300 rounded-lg transition"
+            >
+              BACK
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6">
             {LEVELS.map((lvl, idx) => {
               const isUnlocked = idx <= (savedGame?.highestUnlockedLevel || 0);
               return (
@@ -124,29 +166,32 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   key={lvl.id}
                   disabled={!isUnlocked}
                   onClick={() => handleStart(idx)}
-                  className={`p-3 rounded-lg border text-left flex flex-col transition ${
+                  className={`p-3 rounded-lg border text-left flex flex-col justify-between transition min-h-[90px] ${
                     isUnlocked
                       ? 'bg-neutral-950/80 hover:bg-neutral-800 border-cyan-600/60 text-neutral-200 cursor-pointer active:scale-98'
-                      : 'bg-neutral-950/40 border-neutral-800 text-neutral-600 cursor-not-allowed'
+                      : 'bg-neutral-950/40 border-neutral-900 text-neutral-600 cursor-not-allowed'
                   }`}
                 >
-                  <div className="flex items-center justify-between text-xs font-bold font-pixel">
-                    <span className={isUnlocked ? 'text-cyan-400' : 'text-neutral-600'}>
-                      SECTOR 0{lvl.id}
-                    </span>
-                    {!isUnlocked && <span className="text-[9px] text-neutral-600">[LOCKED]</span>}
+                  <div>
+                    <div className="flex items-center justify-between text-xs font-bold font-pixel">
+                      <span className={isUnlocked ? 'text-cyan-400' : 'text-neutral-600'}>
+                        SECTOR 0{lvl.id}
+                      </span>
+                      {!isUnlocked && <span className="text-[9px] text-neutral-600">[LOCKED]</span>}
+                    </div>
+                    <span className="text-xs font-semibold mt-1 block truncate">{lvl.title}</span>
                   </div>
-                  <span className="text-xs font-semibold mt-1 truncate">{lvl.title}</span>
-                  <span className="text-[10px] text-neutral-500 mt-0.5 line-clamp-1">{lvl.subtitle}</span>
+                  <span className="text-[10px] text-neutral-500 mt-1 line-clamp-1">{lvl.subtitle}</span>
                 </button>
               );
             })}
           </div>
+
           <button
             onClick={() => setView('main')}
             className="w-full py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-lg font-semibold text-sm transition"
           >
-            BACK
+            BACK TO MAIN MENU
           </button>
         </div>
       )}

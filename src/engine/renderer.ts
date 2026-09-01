@@ -1,4 +1,4 @@
-import { Direction, Echo, GameSettings, LevelData, ParadoxEnemy, PuzzleObject, TileType } from '../types';
+import { Direction, Echo, GameSettings, LevelData, ParadoxEnemy, PuzzleObject, TileType, ObserverEntity } from '../types';
 import { TILE_SIZE } from './physics';
 
 export interface Particle {
@@ -58,7 +58,9 @@ export class GameRenderer {
     camera: { x: number; y: number; rotation?: number },
     settings: GameSettings,
     resetFlash: number = 0,
-    deathTimer: number = 0
+    deathTimer: number = 0,
+    currentRoomState: 'A' | 'B' | 'C' = 'A',
+    observerEntity: ObserverEntity | null = null
   ) {
     ctx.save();
 
@@ -75,13 +77,13 @@ export class GameRenderer {
     ctx.translate(Math.round(-camera.x), Math.round(-camera.y));
 
     // 1. Draw Tiles
-    this.drawTilemap(ctx, level);
+    this.drawTilemap(ctx, level, currentRoomState);
 
     // 2. Draw Level Hints (floor markings & holographic text)
     this.drawLevelHints(ctx, level);
 
-    // 3. Draw Puzzle Objects (Floor layer: plates, water, hazard)
-    this.drawPuzzleObjectsFloor(ctx, objects);
+    // 3. Draw Puzzle Objects (Floor layer: plates, water, hazard, pods)
+    this.drawPuzzleObjectsFloor(ctx, objects, currentRoomState);
 
     // 4. Draw Echoes (Floor trails / shadows)
     for (const echo of echoes) {
@@ -90,7 +92,12 @@ export class GameRenderer {
       }
     }
 
-    // 5. Draw Player (if not hiding)
+    // 5. Draw Observer Entity if present in chamber
+    if (observerEntity && !observerEntity.vanished) {
+      this.drawObserver(ctx, observerEntity);
+    }
+
+    // 6. Draw Player (if not hiding)
     if (!player.isHiding) {
       this.drawPlayer(ctx, player);
     } else {
@@ -100,25 +107,25 @@ export class GameRenderer {
       ctx.fillText('[HIDING]', (player.x + 0.1) * TILE_SIZE, (player.y - 0.2) * TILE_SIZE);
     }
 
-    // 6. Draw Paradox Enemies
+    // 7. Draw Paradox Enemies
     for (const paradox of paradoxEnemies) {
       this.drawParadox(ctx, paradox, settings);
     }
 
-    // 7. Draw Puzzle Objects (Over layer: crates, doors, terminals, lasers, core)
-    this.drawPuzzleObjectsTop(ctx, objects);
+    // 8. Draw Puzzle Objects (Over layer: crates, doors, terminals, lasers, core, decoys, collectibles)
+    this.drawPuzzleObjectsTop(ctx, objects, currentRoomState);
 
-    // 8. Draw Particle Systems
+    // 9. Draw Particle Systems
     this.drawParticles(ctx);
 
-    // 9. Draw Dynamic Atmospheric Sci-Fi Lighting
+    // 10. Draw Dynamic Atmospheric Sci-Fi Lighting
     if (!settings.reducedFX) {
       this.drawLightingMask(ctx, level, player, echoes, paradoxEnemies, objects);
     }
 
     ctx.restore(); // Restore camera translation
 
-    // 10. Post-processing FX (Reset Glitch Flash, Death Screen Overlay, CRT Vignette)
+    // 11. Post-processing FX (Reset Glitch Flash, Death Screen Overlay, CRT Vignette)
     if (resetFlash > 0) {
       this.drawResetGlitch(ctx, canvasWidth, canvasHeight, resetFlash);
     }
@@ -131,12 +138,47 @@ export class GameRenderer {
     ctx.restore();
   }
 
-  private drawTilemap(ctx: CanvasRenderingContext2D, level: LevelData) {
+  private drawObserver(ctx: CanvasRenderingContext2D, observer: ObserverEntity) {
+    const ox = observer.x * TILE_SIZE;
+    const oy = observer.y * TILE_SIZE;
     const time = this.ambientTime;
+
+    ctx.save();
+    // Spectral shimmer
+    const glitchX = Math.sin(time * 20 + observer.glitchPhase) * 2;
+    ctx.globalAlpha = observer.vanishTimer > 0 ? Math.max(0, observer.vanishTimer / 0.6) : 0.85;
+
+    // Dark mysterious silhouette
+    ctx.fillStyle = '#020617';
+    ctx.fillRect(ox + 5 + glitchX, oy + 4, 14, 20);
+
+    // Glowing cyan/violet dual visor
+    ctx.fillStyle = '#c084fc';
+    ctx.fillRect(ox + 7 + glitchX, oy + 7, 10, 3);
+    ctx.fillStyle = '#22d3ee';
+    ctx.fillRect(ox + 9 + glitchX, oy + 8, 6, 1);
+
+    // Floating label
+    ctx.fillStyle = '#a855f7';
+    ctx.font = 'bold 8px "Press Start 2P"';
+    ctx.textAlign = 'center';
+    ctx.fillText('???', ox + 12, oy - 4);
+
+    ctx.restore();
+  }
+
+  private drawTilemap(ctx: CanvasRenderingContext2D, level: LevelData, roomState: 'A' | 'B' | 'C' = 'A') {
+    const time = this.ambientTime;
+    let tiles = level.tiles;
+    if (roomState === 'B' && level.stateTiles?.B) {
+      tiles = level.stateTiles.B;
+    } else if (roomState === 'C' && level.stateTiles?.C) {
+      tiles = level.stateTiles.C;
+    }
 
     for (let y = 0; y < level.height; y++) {
       for (let x = 0; x < level.width; x++) {
-        const tile = level.tiles[y][x];
+        const tile = tiles[y]?.[x] ?? TileType.EMPTY;
         const px = x * TILE_SIZE;
         const py = y * TILE_SIZE;
 
@@ -163,9 +205,26 @@ export class GameRenderer {
           ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
           ctx.fillStyle = '#06b6d4';
           ctx.fillRect(px + TILE_SIZE / 2 - 1, py + TILE_SIZE / 2 - 1, 2, 2);
+        } else if (tile === TileType.ABANDONED_FLOOR) {
+          // Mossy cracked derelict floor
+          ctx.fillStyle = '#141e1b';
+          ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+          ctx.fillStyle = '#065f46';
+          ctx.fillRect(px + 4, py + 6, 8, 4);
+          ctx.fillRect(px + 14, py + 18, 10, 5);
+          ctx.strokeStyle = '#2d3748';
+          ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+        } else if (tile === TileType.PHASE_BRIDGE) {
+          // Shimmering quantum phase bridge
+          const bridgePulse = 0.5 + Math.sin(time * 6 + x) * 0.3;
+          ctx.fillStyle = `rgba(168, 85, 247, ${bridgePulse})`;
+          ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
         } else if (tile === TileType.WALL) {
           // Heavy reinforced metal wall block
-          ctx.fillStyle = '#1e293b';
+          ctx.fillStyle = roomState === 'C' ? '#1c1917' : '#1e293b';
           ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
           // Top highlight bevel
@@ -183,7 +242,7 @@ export class GameRenderer {
 
           // Glowing energy conduit strip on wall
           if ((x + y) % 4 === 0) {
-            ctx.fillStyle = '#06b6d4';
+            ctx.fillStyle = roomState === 'B' ? '#ef4444' : '#06b6d4';
             ctx.fillRect(px + 6, py + 10, TILE_SIZE - 12, 3);
           }
         } else if (tile === TileType.PIT) {
@@ -244,16 +303,42 @@ export class GameRenderer {
     }
   }
 
-  private drawPuzzleObjectsFloor(ctx: CanvasRenderingContext2D, objects: PuzzleObject[]) {
+  private drawPuzzleObjectsFloor(ctx: CanvasRenderingContext2D, objects: PuzzleObject[], roomState: 'A' | 'B' | 'C' = 'A') {
     const time = this.ambientTime;
 
     for (const obj of objects) {
+      if (obj.roomStateMask && !obj.roomStateMask.includes(roomState)) continue;
+
       const ox = obj.x * TILE_SIZE;
       const oy = obj.y * TILE_SIZE;
       const ow = obj.width * TILE_SIZE;
       const oh = obj.height * TILE_SIZE;
 
-      if (obj.type === 'pressure_plate' || obj.type === 'secret_console') {
+      if (obj.type === 'echo_transfer_pod') {
+        // Quantum Echo Transfer Pad
+        const isTarget = !!obj.state;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(ox + 2, oy + 2, ow - 4, oh - 4);
+
+        // Circular teleportation ring
+        ctx.strokeStyle = isTarget ? '#22d3ee' : '#0284c7';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(ox + ow / 2, oy + oh / 2, ow / 2 - 4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Pulsing quantum core
+        const pulse = 4 + Math.sin(time * 6) * 2;
+        ctx.fillStyle = isTarget ? 'rgba(34, 211, 238, 0.7)' : 'rgba(2, 132, 199, 0.4)';
+        ctx.beginPath();
+        ctx.arc(ox + ow / 2, oy + oh / 2, pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#67e8f9';
+        ctx.font = 'bold 7px "Share Tech Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText(obj.label || 'TRANSFER POD', ox + ow / 2, oy + oh + 8);
+      } else if (obj.type === 'pressure_plate' || obj.type === 'secret_console') {
         const isSecret = obj.type === 'secret_console';
         const isPressed = !!obj.state;
         const color = isSecret ? '#d946ef' : obj.colorKey === 'emerald' ? '#10b981' : obj.colorKey === 'amber' ? '#f59e0b' : '#06b6d4';
@@ -300,20 +385,34 @@ export class GameRenderer {
           ctx.font = '9px "Share Tech Mono"';
           ctx.fillText('[DRAINED]', ox + 6, oy + 18);
         }
-      } else if (obj.type === 'electric_hazard') {
+      } else if (obj.type === 'electric_hazard' || obj.type === 'steam_hazard') {
         const isLive = !!obj.state;
         if (isLive) {
-          ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
-          ctx.fillRect(ox, oy, ow, oh);
-          // High voltage lightning spark arcs
-          ctx.strokeStyle = '#facc15';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(ox + 4, oy + oh / 2);
-          ctx.lineTo(ox + ow * 0.3, oy + oh / 2 + (Math.random() * 8 - 4));
-          ctx.lineTo(ox + ow * 0.7, oy + oh / 2 + (Math.random() * 8 - 4));
-          ctx.lineTo(ox + ow - 4, oy + oh / 2);
-          ctx.stroke();
+          if (obj.type === 'steam_hazard') {
+            ctx.fillStyle = 'rgba(241, 245, 249, 0.35)';
+            ctx.fillRect(ox, oy, ow, oh);
+            // Swirling steam puff particles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            for (let s = 0; s < 3; s++) {
+              const sx = ox + 4 + ((s * 10 + time * 15) % (ow - 8));
+              const sy = oy + 6 + Math.sin(time * 5 + s) * 4;
+              ctx.beginPath();
+              ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else {
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+            ctx.fillRect(ox, oy, ow, oh);
+            // High voltage lightning spark arcs
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ox + 4, oy + oh / 2);
+            ctx.lineTo(ox + ow * 0.3, oy + oh / 2 + (Math.random() * 8 - 4));
+            ctx.lineTo(ox + ow * 0.7, oy + oh / 2 + (Math.random() * 8 - 4));
+            ctx.lineTo(ox + ow - 4, oy + oh / 2);
+            ctx.stroke();
+          }
         }
       } else if (obj.type === 'moving_platform') {
         // Platform base
@@ -328,10 +427,12 @@ export class GameRenderer {
     }
   }
 
-  private drawPuzzleObjectsTop(ctx: CanvasRenderingContext2D, objects: PuzzleObject[]) {
+  private drawPuzzleObjectsTop(ctx: CanvasRenderingContext2D, objects: PuzzleObject[], roomState: 'A' | 'B' | 'C' = 'A') {
     const time = this.ambientTime;
 
     for (const obj of objects) {
+      if (obj.roomStateMask && !obj.roomStateMask.includes(roomState)) continue;
+
       const ox = obj.x * TILE_SIZE;
       const oy = obj.y * TILE_SIZE;
       const ow = obj.width * TILE_SIZE;
@@ -339,7 +440,7 @@ export class GameRenderer {
 
       if (obj.type === 'door') {
         const isOpen = !!obj.state;
-        const color = obj.colorKey === 'amber' ? '#f59e0b' : obj.colorKey === 'emerald' ? '#10b981' : '#06b6d4';
+        const color = obj.colorKey === 'amber' ? '#f59e0b' : obj.colorKey === 'emerald' ? '#10b981' : obj.colorKey === 'purple' ? '#a855f7' : '#06b6d4';
 
         if (!isOpen) {
           // Closed blast door
@@ -399,6 +500,122 @@ export class GameRenderer {
           ctx.fillRect(ox + 2, oy + 4, ow - 4, oh - 8);
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(ox + ow / 2 - 1, oy + 4, 2, oh - 8);
+        }
+      } else if (obj.type === 'echo_transfer_console') {
+        // Echo Transfer Station Console
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(ox + 2, oy + 2, ow - 4, oh - 4);
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(ox + 4, oy + 4, ow - 8, 6);
+
+        // Holographic beam antenna
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(ox + ow / 2 - 1, oy - 4, 2, 6);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 7px "Share Tech Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText('TRANSFER [E]', ox + ow / 2, oy + oh + 7);
+      } else if (obj.type === 'temporal_decoy') {
+        // Temporal Decoy Machine
+        const isPulsing = !!obj.state;
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fillRect(ox + 3, oy + 3, ow - 6, oh - 6);
+
+        // Glowing radar hologram
+        const decoyPulse = Math.sin(time * 8) * 3;
+        ctx.fillStyle = isPulsing ? '#ec4899' : '#8b5cf6';
+        ctx.beginPath();
+        ctx.arc(ox + ow / 2, oy + oh / 2, 5 + (isPulsing ? decoyPulse : 0), 0, Math.PI * 2);
+        ctx.fill();
+
+        // Expanding sonar rings if active
+        if (isPulsing) {
+          const ringRad = ((time * 30) % 24) + 6;
+          ctx.strokeStyle = `rgba(236, 72, 153, ${Math.max(0, 1 - ringRad / 30)})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(ox + ow / 2, oy + oh / 2, ringRad, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = '#f472b6';
+        ctx.font = 'bold 7px "Share Tech Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText(obj.cooldownTimer && obj.cooldownTimer > 0 ? `${Math.ceil(obj.cooldownTimer)}s` : 'DECOY [E]', ox + ow / 2, oy - 3);
+      } else if (obj.type === 'chrono_phase_shifter') {
+        // Reality Phase Shifter Console
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fillRect(ox + 2, oy + 2, ow - 4, oh - 4);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(ox + 3, oy + 3, ow - 6, oh - 6);
+
+        // Phase letter icon
+        ctx.fillStyle = roomState === 'A' ? '#38bdf8' : roomState === 'B' ? '#ef4444' : '#10b981';
+        ctx.font = 'bold 12px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.fillText(roomState, ox + ow / 2, oy + oh / 2 + 5);
+
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 7px "Share Tech Mono"';
+        ctx.fillText('SHIFT [E]', ox + ow / 2, oy - 3);
+      } else if (obj.type === 'memory_fragment') {
+        // Collectible Memory Fragment (Spinning Crystal Shard)
+        const isCollected = !!obj.state;
+        if (!isCollected) {
+          const floatY = Math.sin(time * 4) * 3;
+          ctx.save();
+          ctx.translate(ox + ow / 2, oy + oh / 2 + floatY);
+          ctx.rotate(time * 2);
+
+          // Glowing diamond shape
+          ctx.fillStyle = '#22d3ee';
+          ctx.beginPath();
+          ctx.moveTo(0, -8);
+          ctx.lineTo(6, 0);
+          ctx.lineTo(0, 8);
+          ctx.lineTo(-6, 0);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.fillStyle = '#67e8f9';
+          ctx.font = 'bold 7px "Share Tech Mono"';
+          ctx.textAlign = 'center';
+          ctx.fillText('MEMORY', ox + ow / 2, oy - 4);
+        }
+      } else if (obj.type === 'temporal_artifact') {
+        // Collectible Temporal Artifact (Golden Orbiting Gyro-Sphere)
+        const isCollected = !!obj.state;
+        if (!isCollected) {
+          const floatY = Math.sin(time * 3) * 3;
+          ctx.save();
+          ctx.translate(ox + ow / 2, oy + oh / 2 + floatY);
+
+          // Golden core
+          ctx.fillStyle = '#eab308';
+          ctx.beginPath();
+          ctx.arc(0, 0, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Orbiting ring
+          ctx.rotate(time * 3);
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 9, 3, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.fillStyle = '#fde047';
+          ctx.font = 'bold 7px "Share Tech Mono"';
+          ctx.textAlign = 'center';
+          ctx.fillText('ARTIFACT', ox + ow / 2, oy - 4);
         }
       } else if (obj.type === 'button' || obj.type === 'timed_switch' || obj.type === 'water_pump' || obj.type === 'distraction_machine') {
         const isActive = !!obj.state;

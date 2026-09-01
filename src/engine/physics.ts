@@ -29,7 +29,8 @@ export function isPositionSolid(
   height: number,
   level: LevelData,
   objects: PuzzleObject[],
-  ignoreCrateId?: string
+  ignoreCrateId?: string,
+  currentRoomState?: 'A' | 'B' | 'C'
 ): boolean {
   // Check level tile bounds & wall tiles
   const minTileX = Math.floor(x);
@@ -41,19 +42,32 @@ export function isPositionSolid(
     return true;
   }
 
+  // Use state-specific tiles if room is in phase B or C
+  let activeTiles = level.tiles;
+  if (currentRoomState === 'B' && level.stateTiles?.B) {
+    activeTiles = level.stateTiles.B;
+  } else if (currentRoomState === 'C' && level.stateTiles?.C) {
+    activeTiles = level.stateTiles.C;
+  }
+
   for (let ty = minTileY; ty <= maxTileY; ty++) {
     for (let tx = minTileX; tx <= maxTileX; tx++) {
-      const tile = level.tiles[ty]?.[tx];
+      const tile = activeTiles[ty]?.[tx];
       if (tile === undefined || isTileSolid(tile)) {
         return true;
       }
     }
   }
 
-  // Check solid objects: Closed doors, Crates, Active laser barriers, impassable flooded water
+  // Check solid objects: Closed doors, Crates, Active laser barriers, impassable flooded water, steam hazards
   const box: BoundingBox = { x, y, width, height };
 
   for (const obj of objects) {
+    // If object is filtered out by current room state mask, ignore
+    if (obj.roomStateMask && currentRoomState && !obj.roomStateMask.includes(currentRoomState)) {
+      continue;
+    }
+
     if (obj.type === 'door' && !obj.state) {
       const doorBox: BoundingBox = { x: obj.x, y: obj.y, width: obj.width, height: obj.height };
       if (checkAABB(box, doorBox)) return true;
@@ -83,13 +97,14 @@ export function tryPushCrate(
   dx: number,
   dy: number,
   level: LevelData,
-  objects: PuzzleObject[]
+  objects: PuzzleObject[],
+  currentRoomState?: 'A' | 'B' | 'C'
 ): boolean {
   const targetX = crate.x + dx;
   const targetY = crate.y + dy;
 
   // Verify target is free
-  if (!isPositionSolid(targetX, targetY, crate.width, crate.height, level, objects, crate.id)) {
+  if (!isPositionSolid(targetX, targetY, crate.width, crate.height, level, objects, crate.id, currentRoomState)) {
     crate.x = Math.round(targetX * 10) / 10;
     crate.y = Math.round(targetY * 10) / 10;
     return true;
@@ -102,10 +117,16 @@ export function updatePuzzleObjects(
   player: { x: number; y: number; width: number; height: number; isHiding: boolean },
   echoes: Echo[],
   deltaTime: number,
+  currentRoomState?: 'A' | 'B' | 'C',
   onSoundTrigger?: (sound: string) => void
 ) {
-  // 1. Update moving platforms
+  // 1. Update moving platforms & timers
   for (const obj of objects) {
+    // If object is filtered out by current room state mask, ignore
+    if (obj.roomStateMask && currentRoomState && !obj.roomStateMask.includes(currentRoomState)) {
+      continue;
+    }
+
     if (obj.type === 'moving_platform' && obj.pathStart && obj.pathEnd) {
       const speed = (obj.moveSpeed || 1) * deltaTime;
       const dir = obj.moveDirection || 1;
@@ -143,6 +164,15 @@ export function updatePuzzleObjects(
         onSoundTrigger?.('plate_up');
       }
     }
+
+    // Update Decoy machine cooldown countdown
+    if (obj.type === 'temporal_decoy' && obj.cooldownTimer !== undefined && obj.cooldownTimer > 0) {
+      obj.cooldownTimer -= deltaTime;
+      if (obj.cooldownTimer <= 0) {
+        obj.cooldownTimer = 0;
+        obj.state = false; // Decoy sonar pulse finishes
+      }
+    }
   }
 
   // 2. Collect all active physical entity positions (Player + non-hiding Echoes + Crates)
@@ -165,6 +195,10 @@ export function updatePuzzleObjects(
 
   // 3. Update pressure plates and secret consoles
   for (const obj of objects) {
+    if (obj.roomStateMask && currentRoomState && !obj.roomStateMask.includes(currentRoomState)) {
+      continue;
+    }
+
     if (obj.type === 'pressure_plate' || obj.type === 'secret_console') {
       const plateBox: BoundingBox = {
         x: obj.x + 0.1,
@@ -194,9 +228,13 @@ export function updatePuzzleObjects(
     }
   }
 
-  // 4. Update linked mechanisms (Doors, Laser Barriers, Water Zones, Hazards)
+  // 4. Update linked mechanisms (Doors, Laser Barriers, Water Zones, Hazards, Quantum Bridges)
   for (const obj of objects) {
-    if (obj.type === 'door' || obj.type === 'laser_barrier') {
+    if (obj.roomStateMask && currentRoomState && !obj.roomStateMask.includes(currentRoomState)) {
+      continue;
+    }
+
+    if (obj.type === 'door' || obj.type === 'laser_barrier' || obj.type === 'quantum_bridge') {
       // Find all objects linked to this door
       const controllers = objects.filter((o) => o.linkedIds?.includes(obj.id));
       if (controllers.length > 0) {
@@ -204,8 +242,8 @@ export function updatePuzzleObjects(
         const allSatisfied = controllers.every((c) => !!c.state);
         const prevDoorState = !!obj.state;
 
-        if (obj.type === 'door') {
-          obj.state = allSatisfied; // true = opened
+        if (obj.type === 'door' || obj.type === 'quantum_bridge') {
+          obj.state = allSatisfied; // true = opened / enabled
         } else if (obj.type === 'laser_barrier') {
           obj.state = !allSatisfied; // true = active barrier, false = disabled
         }
@@ -225,10 +263,10 @@ export function updatePuzzleObjects(
       }
     }
 
-    if (obj.type === 'electric_hazard') {
+    if (obj.type === 'electric_hazard' || obj.type === 'steam_hazard') {
       const breaker = objects.find((o) => o.type === 'button' && o.linkedIds?.includes(obj.id));
       if (breaker) {
-        obj.state = !breaker.state; // breaker active cuts electricity
+        obj.state = !breaker.state; // breaker active cuts hazard
       }
     }
   }
