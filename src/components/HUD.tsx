@@ -36,7 +36,12 @@ export const HUD: React.FC<HUDProps> = ({
   const formattedTime = `00:${seconds.toString().padStart(2, '0')}.${hundredths.toString().padStart(2, '0')}`;
 
   return (
-    <div id="game-hud" className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-4 font-mono-tech select-none">
+    <div
+      id="game-hud"
+      className={`absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-4 font-mono-tech select-none transition-transform ${
+        isResetting ? 'animate-temporal-shake' : ''
+      }`}
+    >
       {/* Top Bar */}
       <div className="flex items-start justify-between w-full gap-4">
         {/* Top Left: Sector & Objective */}

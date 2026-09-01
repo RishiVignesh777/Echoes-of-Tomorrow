@@ -151,9 +151,33 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     setIsResetting(true);
     soundManager.playTimelineReset();
 
+    // High-impact temporal rupture screen shake
     if (settings.screenShake) {
-      s.screenShake = 12;
+      s.screenShake = 26;
     }
+
+    // Spawn chrono rupture particle explosion at rewind origin
+    rendererRef.current.addParticle(
+      (s.player.x + 0.35) * TILE_SIZE,
+      (s.player.y + 0.35) * TILE_SIZE,
+      '#38bdf8',
+      22,
+      3.2
+    );
+    rendererRef.current.addParticle(
+      (s.player.x + 0.35) * TILE_SIZE,
+      (s.player.y + 0.35) * TILE_SIZE,
+      '#ec4899',
+      16,
+      2.6
+    );
+    rendererRef.current.addParticle(
+      (s.player.x + 0.35) * TILE_SIZE,
+      (s.player.y + 0.35) * TILE_SIZE,
+      '#ffffff',
+      12,
+      3.8
+    );
 
     // 1. Finalize and store current recording into a new Echo
     const newEcho = recorderRef.current.finalizeTimelineAndSpawnEcho();
@@ -403,8 +427,23 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           setParadoxAlert(false);
         }
 
+        // Final seconds countdown temporal instability micro-tremor
+        if (settings.screenShake && s.timeRemaining <= 3.5 && s.timeRemaining > 0) {
+          const frac = s.timeRemaining % 1;
+          if (frac > 0.82) {
+            s.screenShake = Math.max(s.screenShake, (3.8 - s.timeRemaining) * 2.2);
+          }
+        }
+
         if (s.timeRemaining <= 0) {
           performTimelineReset();
+        }
+      } else if (s.isResetting) {
+        // Smoothly decay reset flash & maintain intense temporal turbulence shudder
+        s.resetFlash = Math.max(0, s.resetFlash - dt / 0.82);
+        if (settings.screenShake) {
+          const volatileShake = 18 * Math.sin(Math.max(0, s.resetFlash) * Math.PI) + (Math.random() * 6 - 3);
+          s.screenShake = Math.max(s.screenShake, volatileShake);
         }
       }
 
@@ -600,11 +639,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       s.camera.x += (targetCamX - s.camera.x) * 0.12;
       s.camera.y += (targetCamY - s.camera.y) * 0.12;
 
-      // Apply screen shake
-      if (s.screenShake > 0) {
-        s.camera.x += (Math.random() * 2 - 1) * s.screenShake;
-        s.camera.y += (Math.random() * 2 - 1) * s.screenShake;
-        s.screenShake = Math.max(0, s.screenShake - dt * 25);
+      let renderCamX = s.camera.x;
+      let renderCamY = s.camera.y;
+      let renderCamRot = 0;
+
+      // Apply screen shake (translational jitter + rotational tremor)
+      if (settings.screenShake && s.screenShake > 0) {
+        const shakeAngle = Math.random() * Math.PI * 2;
+        const shakeDist = s.screenShake * (0.6 + Math.random() * 0.4);
+        renderCamX += Math.cos(shakeAngle) * shakeDist;
+        renderCamY += Math.sin(shakeAngle) * shakeDist;
+        renderCamRot = (Math.random() * 2 - 1) * s.screenShake * 0.0018;
+
+        s.screenShake = Math.max(0, s.screenShake - dt * 28);
       }
 
       // 8. Render Scene to Canvas
@@ -622,7 +669,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             recorderRef.current.getEchoes(),
             s.paradoxEnemies,
             s.objects,
-            s.camera,
+            { x: renderCamX, y: renderCamY, rotation: renderCamRot },
             settings,
             s.resetFlash,
             s.deathTimer

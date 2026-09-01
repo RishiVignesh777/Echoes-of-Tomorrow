@@ -55,7 +55,7 @@ export class GameRenderer {
     echoes: Echo[],
     paradoxEnemies: ParadoxEnemy[],
     objects: PuzzleObject[],
-    camera: { x: number; y: number },
+    camera: { x: number; y: number; rotation?: number },
     settings: GameSettings,
     resetFlash: number = 0,
     deathTimer: number = 0
@@ -66,9 +66,13 @@ export class GameRenderer {
     ctx.fillStyle = '#090d16';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-    // Apply Camera translation
+    // Apply Camera translation and volatile rotation tilt
     ctx.save();
-    ctx.translate(Math.round(canvasWidth / 2 - camera.x), Math.round(canvasHeight / 2 - camera.y));
+    ctx.translate(Math.round(canvasWidth / 2), Math.round(canvasHeight / 2));
+    if (camera.rotation) {
+      ctx.rotate(camera.rotation);
+    }
+    ctx.translate(Math.round(-camera.x), Math.round(-camera.y));
 
     // 1. Draw Tiles
     this.drawTilemap(ctx, level);
@@ -778,18 +782,39 @@ export class GameRenderer {
   ) {
     ctx.save();
     // Invert flash + glitch scanlines
-    const alpha = Math.sin(progress * Math.PI);
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.4})`;
+    const alpha = Math.sin(Math.max(0, Math.min(1, progress)) * Math.PI);
+    
+    // Temporal rift backdrop flash
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.45})`;
     ctx.fillRect(0, 0, width, height);
 
-    // RGB shift slice bars
-    const barCount = 12;
+    // RGB shift slice bars with displacement
+    const barCount = 18;
     for (let i = 0; i < barCount; i++) {
       const by = Math.random() * height;
-      const bh = Math.random() * 20 + 5;
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(6, 182, 212, 0.4)' : 'rgba(236, 72, 153, 0.4)';
-      ctx.fillRect(0, by, width, bh);
+      const bh = Math.random() * 26 + 6;
+      const offsetX = (Math.random() - 0.5) * 32 * alpha;
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(6, 182, 212, 0.45)' : 'rgba(236, 72, 153, 0.45)';
+      ctx.fillRect(offsetX, by, width, bh);
     }
+
+    // Expanding concentric temporal shockwave rings
+    const maxRadius = Math.max(width, height) * 0.75;
+    const ringRadius1 = (1 - progress) * maxRadius;
+    const ringRadius2 = ((1 - progress) * 0.7) * maxRadius;
+    
+    ctx.strokeStyle = `rgba(103, 232, 249, ${alpha * 0.8})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(width / 2, height / 2, ringRadius1, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(244, 114, 182, ${alpha * 0.6})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(width / 2, height / 2, ringRadius2, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.restore();
   }
 }
