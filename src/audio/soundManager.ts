@@ -1,15 +1,18 @@
-import { GameSettings } from '../types';
+import { AmbientDynamicsOptions, GameSettings, LevelEnvironmentType } from '../types';
+import { AmbientSoundSystem } from './ambientSoundSystem';
 
 class SoundManager {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
+  private ambientGain: GainNode | null = null;
   private isMuted: boolean = false;
   private ambientOscs: { osc: OscillatorNode; gain: GainNode }[] = [];
   private pulseInterval: number | null = null;
   private currentMusicIntensity: 'calm' | 'urgent' | 'danger' | 'victory' = 'calm';
   private stepToneToggle: boolean = false;
+  private ambientSystem: AmbientSoundSystem = new AmbientSoundSystem();
 
   public init() {
     if (this.ctx) return;
@@ -20,15 +23,19 @@ class SoundManager {
       this.masterGain = this.ctx.createGain();
       this.musicGain = this.ctx.createGain();
       this.sfxGain = this.ctx.createGain();
+      this.ambientGain = this.ctx.createGain();
 
       this.musicGain.connect(this.masterGain);
       this.sfxGain.connect(this.masterGain);
+      this.ambientGain.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
 
       this.masterGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
-      this.musicGain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+      this.musicGain.gain.setValueAtTime(0.4, this.ctx.currentTime);
       this.sfxGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+      this.ambientGain.gain.setValueAtTime(0.75, this.ctx.currentTime);
 
+      this.ambientSystem.init(this.ctx, this.ambientGain);
       this.startAmbientMusic();
     } catch {
       console.warn('Web Audio API not supported or blocked.');
@@ -42,11 +49,33 @@ class SoundManager {
   }
 
   public updateVolumes(settings: GameSettings) {
-    if (!this.ctx || !this.masterGain || !this.musicGain || !this.sfxGain) return;
+    if (!this.ctx || !this.masterGain || !this.musicGain || !this.sfxGain || !this.ambientGain) return;
     const now = this.ctx.currentTime;
     this.masterGain.gain.setTargetAtTime(settings.masterVolume, now, 0.05);
-    this.musicGain.gain.setTargetAtTime(settings.musicVolume * 0.6, now, 0.05);
+    this.musicGain.gain.setTargetAtTime(settings.musicVolume * 0.5, now, 0.05);
     this.sfxGain.gain.setTargetAtTime(settings.sfxVolume * 0.8, now, 0.05);
+    
+    const ambientVol = (settings.ambientVolume !== undefined ? settings.ambientVolume : settings.musicVolume) * 0.8;
+    this.ambientGain.gain.setTargetAtTime(ambientVol, now, 0.05);
+    this.ambientSystem.setMasterVolume(ambientVol);
+  }
+
+  public setLevelEnvironment(env: LevelEnvironmentType, immediate: boolean = false) {
+    this.init();
+    this.resume();
+    this.ambientSystem.setEnvironment(env, immediate);
+  }
+
+  public updateAmbientDynamics(options: AmbientDynamicsOptions) {
+    this.ambientSystem.updateDynamics(options);
+  }
+
+  public getCurrentEnvironment(): LevelEnvironmentType {
+    return this.ambientSystem.getCurrentEnvironment();
+  }
+
+  public getCurrentEnvironmentDescription(): string {
+    return this.ambientSystem.getCurrentEnvironmentDescription();
   }
 
   public setMusicIntensity(intensity: 'calm' | 'urgent' | 'danger' | 'victory') {

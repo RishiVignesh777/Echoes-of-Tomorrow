@@ -192,6 +192,24 @@ export interface LevelHint {
   subtext?: string;
 }
 
+export type LevelEnvironmentType =
+  | 'facility_clean'
+  | 'industrial_factory'
+  | 'flooded_lab'
+  | 'containment_alert'
+  | 'temporal_void'
+  | 'lost_wing'
+  | 'spectral_sanctuary'
+  | 'singularity_core';
+
+export interface AmbientDynamicsOptions {
+  timeRemaining: number;
+  paradoxProximity?: number; // 0 to 1
+  roomState?: RoomTimelineState; // 'A' | 'B' | 'C'
+  echoCount?: number;
+  hasActiveHazardNear?: boolean;
+}
+
 export interface LevelData {
   id: number;
   title: string;
@@ -207,6 +225,7 @@ export interface LevelData {
   observerSpawn?: { x: number; y: number; dialogue?: string };
   hints?: LevelHint[];
   ambientColor?: string;
+  ambientEnvironment?: LevelEnvironmentType;
   maxRecommendedEchoes?: number;
   // Update 2.0 Room Timeline States
   defaultRoomState?: RoomTimelineState;
@@ -225,6 +244,7 @@ export interface GameSettings {
   masterVolume: number;
   musicVolume: number;
   sfxVolume: number;
+  ambientVolume?: number;
   screenShake: boolean;
   crtEffects: boolean;
   reducedFX: boolean;

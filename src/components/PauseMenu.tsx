@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Play, RotateCcw, Settings, HelpCircle, LogOut, Volume2, VolumeX, Eye, Shield, Sliders } from 'lucide-react';
+import { Play, RotateCcw, Settings, HelpCircle, LogOut, Volume2, VolumeX, Eye, Shield, Sliders, Radio } from 'lucide-react';
 import { GameSettings } from '../types';
+import { soundManager } from '../audio/soundManager';
 
 interface PauseMenuProps {
   settings: GameSettings;
@@ -110,7 +111,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
             {/* Music Volume */}
             <div>
               <div className="flex justify-between text-xs text-neutral-300 mb-1">
-                <span className="font-semibold">Music & Ambient Drone</span>
+                <span className="font-semibold">Music & Synth</span>
                 <span>{Math.round(settings.musicVolume * 100)}%</span>
               </div>
               <input
@@ -123,6 +124,28 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
                   onUpdateSettings({ ...settings, musicVolume: parseFloat(e.target.value) })
                 }
                 className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
+              />
+            </div>
+
+            {/* Ambient & Temporal Static Volume */}
+            <div>
+              <div className="flex justify-between text-xs text-neutral-300 mb-1">
+                <span className="font-semibold flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Ambient Drone & Temporal Static</span>
+                </span>
+                <span>{Math.round((settings.ambientVolume ?? 0.8) * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={settings.ambientVolume ?? 0.8}
+                onChange={(e) =>
+                  onUpdateSettings({ ...settings, ambientVolume: parseFloat(e.target.value) })
+                }
+                className="w-full accent-teal-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
               />
             </div>
 
@@ -143,6 +166,22 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
                 }
                 className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
               />
+            </div>
+
+            {/* Active Sector Acoustic Environment Badge */}
+            <div className="p-3 bg-teal-950/30 border border-teal-500/30 rounded-lg text-xs">
+              <div className="flex items-center justify-between text-teal-300 font-bold mb-1">
+                <span className="flex items-center gap-1 text-[11px] uppercase tracking-wider">
+                  <Volume2 className="w-3.5 h-3.5 text-teal-400" />
+                  Dynamic Acoustic Soundscape
+                </span>
+                <span className="text-[10px] font-mono text-teal-400 bg-teal-900/60 px-1.5 py-0.5 rounded uppercase">
+                  {soundManager.getCurrentEnvironment().replace('_', ' ')}
+                </span>
+              </div>
+              <p className="text-neutral-300 text-[11px] leading-relaxed">
+                {soundManager.getCurrentEnvironmentDescription()}
+              </p>
             </div>
 
             {/* Toggles */}

@@ -116,6 +116,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     setLevel(curLevel);
     recorderRef.current.resetAll();
 
+    // Initialize Dynamic Ambient Soundscape for Sector
+    soundManager.setLevelEnvironment(curLevel.ambientEnvironment || 'facility_clean');
+
     // Reset runtime state
     stateRef.current.player.x = curLevel.playerSpawn.x;
     stateRef.current.player.y = curLevel.playerSpawn.y;
@@ -536,6 +539,34 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           soundManager.setMusicIntensity('calm');
           setParadoxAlert(false);
         }
+
+        // Dynamic Ambient Soundscape & Temporal Static modulation
+        let minParadoxDist = 999;
+        for (let i = 0; i < s.paradoxEnemies.length; i++) {
+          const p = s.paradoxEnemies[i];
+          const dist = Math.hypot(p.x - s.player.x, p.y - s.player.y);
+          if (dist < minParadoxDist) minParadoxDist = dist;
+        }
+        const paradoxProximity = minParadoxDist < 8 ? Math.max(0, (8 - minParadoxDist) / 7) : 0;
+
+        let hasActiveHazardNear = false;
+        for (let i = 0; i < s.objects.length; i++) {
+          const obj = s.objects[i];
+          if (obj.type === 'steam_hazard' && obj.state === true) {
+            if (Math.hypot(obj.x - s.player.x, obj.y - s.player.y) <= 3.5) {
+              hasActiveHazardNear = true;
+              break;
+            }
+          }
+        }
+
+        soundManager.updateAmbientDynamics({
+          timeRemaining: s.timeRemaining,
+          paradoxProximity,
+          roomState: s.currentRoomState,
+          echoCount: recorderRef.current.getEchoes().length,
+          hasActiveHazardNear,
+        });
 
         // Final seconds countdown temporal instability micro-tremor
         if (settings.screenShake && s.timeRemaining <= 3.5 && s.timeRemaining > 0) {

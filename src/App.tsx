@@ -18,6 +18,7 @@ const LAST_NOTIFIED_VERSION_KEY = 'echoes_of_tomorrow_last_notified_ver';
 const DEFAULT_SETTINGS: GameSettings = {
   masterVolume: 0.8,
   musicVolume: 0.6,
+  ambientVolume: 0.8,
   sfxVolume: 0.8,
   screenShake: true,
   crtEffects: true,

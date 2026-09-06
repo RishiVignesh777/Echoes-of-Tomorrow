@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw, AlertTriangle, Users, Compass } from 'lucide-react';
+import { RotateCcw, AlertTriangle, Users, Compass, Volume2 } from 'lucide-react';
 import { LevelData } from '../types';
 
 interface HUDProps {
@@ -53,8 +53,16 @@ export const HUD: React.FC<HUDProps> = ({
           <div className="text-neutral-200 text-sm font-medium leading-snug">
             {level.objective}
           </div>
-          <div className="text-[10px] text-neutral-500 mt-1 uppercase tracking-wider">
-            Timeline Cycle: <span className="text-cyan-300 font-bold">#{currentTimelineIndex + 1}</span>
+          <div className="flex items-center justify-between text-[10px] text-neutral-500 mt-1 uppercase tracking-wider">
+            <span>
+              Timeline Cycle: <span className="text-cyan-300 font-bold">#{currentTimelineIndex + 1}</span>
+            </span>
+            {level.ambientEnvironment && (
+              <span className="flex items-center gap-1 text-teal-400/90 font-mono text-[9px] bg-teal-950/60 border border-teal-800/40 px-1.5 py-0.5 rounded">
+                <Volume2 className="w-2.5 h-2.5 text-teal-400 animate-pulse" />
+                {level.ambientEnvironment.replace('_', ' ')}
+              </span>
+            )}
           </div>
         </div>
 

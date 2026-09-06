@@ -28,6 +28,7 @@ export const LEVELS: LevelData[] = [
     maxRecommendedEchoes: 2,
     playerSpawn: { x: 3, y: 7, dir: 'right' },
     ambientColor: 'rgba(6, 78, 59, 0.15)', // Subtle emerald sci-fi hue
+    ambientEnvironment: 'facility_clean',
     hints: [
       { x: 3, y: 5, text: 'MOVE [W A S D] / [ARROWS]', subtext: 'Explore your surroundings' },
       { x: 7, y: 4, text: 'PLATE A', subtext: 'Stand here during Timeline 1' },
@@ -136,6 +137,7 @@ export const LEVELS: LevelData[] = [
     playerSpawn: { x: 2, y: 13, dir: 'up' },
     checkpointSpawn: { x: 11, y: 13, dir: 'up' },
     ambientColor: 'rgba(217, 119, 6, 0.12)', // Warm amber industrial hue
+    ambientEnvironment: 'industrial_factory',
     hints: [
       { x: 3, y: 12, text: 'CRATE PUSH', subtext: 'Push crates [WASD] onto plates to hold them' },
       { x: 7, y: 5, text: 'MULTI-SWITCH', subtext: 'Echo 1 & Echo 2 can hold switches simultaneously' },
@@ -292,6 +294,7 @@ export const LEVELS: LevelData[] = [
     playerSpawn: { x: 2, y: 3, dir: 'right' },
     checkpointSpawn: { x: 13, y: 3, dir: 'right' },
     ambientColor: 'rgba(2, 132, 199, 0.15)', // Aquamarine watery glow
+    ambientEnvironment: 'flooded_lab',
     hints: [
       { x: 3, y: 5, text: 'WATER PUMP', subtext: 'Echo must hold pump to drain water channel' },
       { x: 8, y: 2, text: 'CIRCUIT BREAKER', subtext: 'Cuts high-voltage electrical grid' },
@@ -445,6 +448,7 @@ export const LEVELS: LevelData[] = [
     playerSpawn: { x: 2, y: 13, dir: 'up' },
     checkpointSpawn: { x: 13, y: 2, dir: 'down' },
     ambientColor: 'rgba(147, 51, 234, 0.15)', // Deep ominous purple
+    ambientEnvironment: 'containment_alert',
     hints: [
       { x: 3, y: 11, text: 'PARADOX DETECTED', subtext: 'It wanders the corridor. Avoid its line of sight!' },
       { x: 6, y: 13, text: 'LOCKER [E]', subtext: 'Hide inside to avoid detection' },
@@ -598,6 +602,7 @@ export const LEVELS: LevelData[] = [
     playerSpawn: { x: 2, y: 7, dir: 'right' },
     checkpointSpawn: { x: 14, y: 7, dir: 'right' },
     ambientColor: 'rgba(225, 29, 72, 0.12)', // Menacing crimson hue
+    ambientEnvironment: 'temporal_void',
     hints: [
       { x: 3, y: 5, text: 'SEQUENTIAL ELEVATORS', subtext: 'Echoes operate consoles to ferry you across the abyss' },
       { x: 14, y: 5, text: 'SYNCHRONIZED TRIPLE LOCK', subtext: 'Hold 3 plates at the exact same moment' },
@@ -766,6 +771,7 @@ export const LEVELS: LevelData[] = [
     playerSpawn: { x: 3, y: 9, dir: 'right' },
     checkpointSpawn: { x: 14, y: 9, dir: 'right' },
     ambientColor: 'rgba(234, 179, 8, 0.15)', // Golden chronos core radiance
+    ambientEnvironment: 'facility_clean',
     hints: [
       { x: 3, y: 7, text: 'CORE COMPLEX', subtext: 'All previous disciplines must be synchronized' },
       { x: 14, y: 7, text: 'CENTRAL LAB', subtext: 'Terminal 1,247 holds the final truth' },
@@ -991,6 +997,7 @@ export const LEVELS: LevelData[] = [
     maxRecommendedEchoes: 3,
     playerSpawn: { x: 3, y: 7, dir: 'right' },
     ambientColor: 'rgba(2, 132, 199, 0.18)',
+    ambientEnvironment: 'lost_wing',
     hints: [
       { x: 3, y: 5, text: 'LOST FACILITY', subtext: 'Discovered during Update 1.1' },
       { x: 7, y: 4, text: 'TRANSFER CONSOLE [E]', subtext: 'Transfers Echo position to target pod' },
@@ -1126,6 +1133,7 @@ export const LEVELS: LevelData[] = [
     maxRecommendedEchoes: 4,
     playerSpawn: { x: 3, y: 7, dir: 'right' },
     ambientColor: 'rgba(6, 182, 212, 0.2)',
+    ambientEnvironment: 'industrial_factory',
     hints: [
       { x: 3, y: 5, text: 'DUAL PODS', subtext: 'Console cycles between linked pads' },
       { x: 10, y: 3, text: 'RELAY ALPHA', subtext: 'Pod 1 controls upper laser array' },
@@ -1270,6 +1278,7 @@ export const LEVELS: LevelData[] = [
     maxRecommendedEchoes: 4,
     playerSpawn: { x: 3, y: 7, dir: 'right' },
     ambientColor: 'rgba(88, 28, 135, 0.25)',
+    ambientEnvironment: 'containment_alert',
     hints: [
       { x: 3, y: 5, text: 'PARADOX ADAPTED', subtext: 'Enemies now track recent paths' },
       { x: 7, y: 7, text: 'TEMPORAL DECOY [E]', subtext: 'Broadcasts phantom pulse to lure AI' },
@@ -1398,6 +1407,7 @@ export const LEVELS: LevelData[] = [
     maxRecommendedEchoes: 3,
     playerSpawn: { x: 3, y: 7, dir: 'right' },
     ambientColor: 'rgba(76, 29, 149, 0.22)',
+    ambientEnvironment: 'spectral_sanctuary',
     hints: [
       { x: 3, y: 5, text: 'THE OBSERVER', subtext: 'Silent entity watching across the rift' },
       { x: 11, y: 4, text: 'CHASM CROSSING', subtext: 'Coordinate plate bridges with Echo' },
@@ -1490,6 +1500,7 @@ export const LEVELS: LevelData[] = [
     maxRecommendedEchoes: 4,
     playerSpawn: { x: 3, y: 7, dir: 'right' },
     ambientColor: 'rgba(220, 38, 38, 0.15)',
+    ambientEnvironment: 'temporal_void',
     hints: [
       { x: 3, y: 5, text: 'REALITY SHIFTER [E]', subtext: 'Cycles room between States A, B, and C' },
       { x: 10, y: 4, text: 'STATE B: FLOODED', subtext: 'Water zones active, steam vents overheat' },
@@ -1641,6 +1652,7 @@ export const LEVELS: LevelData[] = [
     maxRecommendedEchoes: 5,
     playerSpawn: { x: 3, y: 9, dir: 'right' },
     ambientColor: 'rgba(234, 179, 8, 0.2)',
+    ambientEnvironment: 'singularity_core',
     hints: [
       { x: 3, y: 7, text: 'THE FINAL COLLAPSE', subtext: 'All update systems converge here' },
       { x: 8, y: 4, text: 'TRANSFER POD', subtext: 'Teleport Echo to bypass active laser grid' },

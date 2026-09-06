@@ -221,7 +221,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
             <div>
               <div className="flex justify-between mb-1">
-                <span>Music & Ambient Synth</span>
+                <span>Music & Synth</span>
                 <span>{Math.round(settings.musicVolume * 100)}%</span>
               </div>
               <input
@@ -234,6 +234,24 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   onUpdateSettings({ ...settings, musicVolume: parseFloat(e.target.value) })
                 }
                 className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between mb-1">
+                <span>Ambient Drone & Temporal Static</span>
+                <span>{Math.round((settings.ambientVolume ?? 0.8) * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={settings.ambientVolume ?? 0.8}
+                onChange={(e) =>
+                  onUpdateSettings({ ...settings, ambientVolume: parseFloat(e.target.value) })
+                }
+                className="w-full accent-teal-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
               />
             </div>
 
