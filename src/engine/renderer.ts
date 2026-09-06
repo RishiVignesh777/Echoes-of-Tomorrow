@@ -1,4 +1,14 @@
-import { Direction, Echo, GameSettings, LevelData, ParadoxEnemy, PuzzleObject, TileType, ObserverEntity } from '../types';
+import {
+  Direction,
+  Echo,
+  GameSettings,
+  LevelData,
+  ParadoxEnemy,
+  PuzzleObject,
+  TileType,
+  ObserverEntity,
+  ActiveChronalInsight,
+} from '../types';
 import { TILE_SIZE } from './physics';
 
 export interface Particle {
@@ -60,7 +70,8 @@ export class GameRenderer {
     resetFlash: number = 0,
     deathTimer: number = 0,
     currentRoomState: 'A' | 'B' | 'C' = 'A',
-    observerEntity: ObserverEntity | null = null
+    observerEntity: ObserverEntity | null = null,
+    chronalInsight: ActiveChronalInsight | null = null
   ) {
     ctx.save();
 
@@ -82,6 +93,11 @@ export class GameRenderer {
     // 2. Draw Level Hints (floor markings & holographic text)
     this.drawLevelHints(ctx, level);
 
+    // 2b. Draw Chronal Insight Path (Waypoints and glowing trajectory lines)
+    if (chronalInsight && chronalInsight.active) {
+      this.drawChronalInsightPath(ctx, chronalInsight);
+    }
+
     // 3. Draw Puzzle Objects (Floor layer: plates, water, hazard, pods)
     this.drawPuzzleObjectsFloor(ctx, objects, currentRoomState);
 
@@ -90,6 +106,11 @@ export class GameRenderer {
       if (echo.active && !echo.isHiding) {
         this.drawEcho(ctx, echo, settings);
       }
+    }
+
+    // 4b. Draw Chronal Ghost if Insight is active
+    if (chronalInsight && chronalInsight.active) {
+      this.drawChronalGhost(ctx, chronalInsight, settings);
     }
 
     // 5. Draw Observer Entity if present in chamber
@@ -1031,6 +1052,142 @@ export class GameRenderer {
     ctx.beginPath();
     ctx.arc(width / 2, height / 2, ringRadius2, 0, Math.PI * 2);
     ctx.stroke();
+
+    ctx.restore();
+  }
+
+  private drawChronalInsightPath(ctx: CanvasRenderingContext2D, insight: ActiveChronalInsight) {
+    const steps = insight.data.steps;
+    if (!steps || steps.length < 2) return;
+    const time = this.ambientTime;
+    const alpha = insight.alpha ?? 1;
+
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, alpha * 0.95);
+
+    // 1. Draw glowing connecting spline / line between steps
+    ctx.beginPath();
+    steps.forEach((step, idx) => {
+      const cx = (step.x + 0.5) * TILE_SIZE;
+      const cy = (step.y + 0.5) * TILE_SIZE;
+      if (idx === 0) {
+        ctx.moveTo(cx, cy);
+      } else {
+        ctx.lineTo(cx, cy);
+      }
+    });
+
+    // Outer glow aura
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // Inner animated dashed golden chrono-beam
+    ctx.shadowBlur = 4;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([8, 6]);
+    ctx.lineDashOffset = -time * 35;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+
+    // 2. Draw Waypoint Nodes & Badges
+    steps.forEach((step, idx) => {
+      const cx = (step.x + 0.5) * TILE_SIZE;
+      const cy = (step.y + 0.5) * TILE_SIZE;
+      const isReached = idx < insight.activeStepIdx;
+      const isCurrent = idx === insight.activeStepIdx;
+      const pulse = isCurrent ? Math.sin(time * 6) * 3 : 0;
+
+      // Outer ring with soft bloom
+      ctx.beginPath();
+      ctx.arc(cx, cy, 12 + pulse, 0, Math.PI * 2);
+      ctx.fillStyle = isCurrent
+        ? 'rgba(245, 158, 11, 0.35)'
+        : isReached
+        ? 'rgba(16, 185, 129, 0.25)'
+        : 'rgba(217, 119, 6, 0.2)';
+      ctx.fill();
+
+      ctx.lineWidth = isCurrent ? 2 : 1.5;
+      ctx.strokeStyle = isCurrent ? '#fbbf24' : isReached ? '#34d399' : '#d97706';
+      ctx.stroke();
+
+      // Number badge
+      ctx.fillStyle = isCurrent ? '#ffffff' : isReached ? '#a7f3d0' : '#fef3c7';
+      ctx.font = 'bold 10px "Share Tech Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${idx + 1}`, cx, cy);
+
+      // Label below or above waypoint
+      if (step.label) {
+        ctx.font = 'bold 8px "Share Tech Mono", monospace';
+        ctx.fillStyle = isCurrent ? '#fbbf24' : '#cbd5e1';
+        ctx.fillText(step.label, cx, cy + 18);
+        if (step.note && isCurrent) {
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '7px "Share Tech Mono", monospace';
+          ctx.fillText(step.note, cx, cy + 27);
+        }
+      }
+    });
+
+    ctx.restore();
+  }
+
+  private drawChronalGhost(
+    ctx: CanvasRenderingContext2D,
+    insight: ActiveChronalInsight,
+    settings: GameSettings
+  ) {
+    const gx = insight.ghostX * TILE_SIZE;
+    const gy = insight.ghostY * TILE_SIZE;
+    const time = this.ambientTime;
+    const alpha = insight.alpha ?? 1;
+
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.92, alpha * 0.88);
+
+    // Subtle golden ripple beneath ghost feet
+    const ripple = (time * 4) % 1;
+    ctx.strokeStyle = `rgba(251, 191, 36, ${(1 - ripple) * 0.6})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(gx + 12, gy + 22, 10 + ripple * 8, 4 + ripple * 3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Ethereal chromatic jitter
+    const jitterX = settings.reducedFX ? 0 : Math.sin(time * 20) * 1.2;
+    const jitterY = settings.reducedFX ? 0 : Math.cos(time * 18) * 0.8;
+
+    // Glowing golden body silhouette
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = settings.reducedFX ? 4 : 10;
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.78)';
+    ctx.fillRect(gx + 6 + jitterX, gy + 4 + jitterY, 12, 18);
+
+    // Glowing visor
+    ctx.fillStyle = '#ffffff';
+    if (insight.ghostDir === 'down') {
+      ctx.fillRect(gx + 8 + jitterX, gy + 7 + jitterY, 8, 3);
+    } else if (insight.ghostDir === 'left') {
+      ctx.fillRect(gx + 6 + jitterX, gy + 7 + jitterY, 5, 3);
+    } else if (insight.ghostDir === 'right') {
+      ctx.fillRect(gx + 13 + jitterX, gy + 7 + jitterY, 5, 3);
+    } else {
+      ctx.fillRect(gx + 8 + jitterX, gy + 5 + jitterY, 8, 2);
+    }
+
+    // Ghost title badge above head
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 8px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('INSIGHT', gx + 12, gy - 6);
 
     ctx.restore();
   }

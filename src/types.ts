@@ -279,6 +279,35 @@ export interface UpdateLogEntry {
   fixes: string[];
 }
 
+export interface ChronalInsightStep {
+  x: number;
+  y: number;
+  action?: 'stand' | 'push' | 'interact' | 'transfer' | 'decoy' | 'phase_shift' | 'reach_exit';
+  label: string;
+  note?: string;
+  holdDuration?: number;
+}
+
+export interface ChronalInsightData {
+  levelId: number;
+  sectorTitle: string;
+  solutionBrief: string;
+  echoInstructions: string[];
+  steps: ChronalInsightStep[];
+}
+
+export interface ActiveChronalInsight {
+  active: boolean;
+  timer: number;
+  maxTimer: number;
+  data: ChronalInsightData;
+  ghostX: number;
+  ghostY: number;
+  ghostDir: Direction;
+  activeStepIdx: number;
+  alpha: number;
+}
+
 export interface SavedGame {
   version: string;
   currentLevelIndex: number;
@@ -290,10 +319,14 @@ export interface SavedGame {
   collectedArtifacts?: string[];
   memoryFragmentsCollected: string[];
   temporalArtifactsCollected: string[];
+  fragmentBalance?: number; // Available Memory Fragments to spend on Chronal Insights
+  spentMemoryFragments?: number; // Lifetime count of Memory Fragments spent
+  chronalInsightsUsed?: number; // Lifetime count of Chronal Insights used
   timeTrialRecords?: Record<number, number>; // levelId -> bestTime
   completedChallenges: string[];
   secretUnlocked: boolean;
   lastSeenVersion?: string;
   timestamp: number;
 }
+
 

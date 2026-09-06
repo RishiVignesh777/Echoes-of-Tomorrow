@@ -628,6 +628,62 @@ class SoundManager {
     });
   }
 
+  public playChronalInsight() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    // Mystical ascending chrono-harmonic crystal shimmer
+    const notes = [440.0, 554.37, 659.25, 880.0, 1108.73, 1318.51];
+    notes.forEach((freq, idx) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const start = now + idx * 0.06;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.05, start + 0.9);
+
+      gain.gain.setValueAtTime(0.22, start);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.9);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(start);
+      osc.stop(start + 0.9);
+    });
+
+    // Sub resonance bloom
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'triangle';
+    subOsc.frequency.setValueAtTime(110.0, now);
+    subOsc.frequency.exponentialRampToValueAtTime(165.0, now + 0.8);
+    subGain.gain.setValueAtTime(0.25, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+    subOsc.connect(subGain);
+    subGain.connect(this.sfxGain);
+    subOsc.start(now);
+    subOsc.stop(now + 0.8);
+  }
+
+  public playInsightDenied() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.linearRampToValueAtTime(80, now + 0.25);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
   public playTimelineShift() {
     if (!this.ctx || !this.sfxGain) return;
     this.resume();

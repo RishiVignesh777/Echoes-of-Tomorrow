@@ -1,7 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Direction, Echo, GameSettings, LevelData, ParadoxEnemy, PlayerAction, PuzzleObject, StoryLog } from '../types';
+import {
+  Direction,
+  Echo,
+  GameSettings,
+  LevelData,
+  ParadoxEnemy,
+  PlayerAction,
+  PuzzleObject,
+  StoryLog,
+  ActiveChronalInsight,
+} from '../types';
 import { LEVELS } from '../data/levels';
 import { STORY_LOGS } from '../data/story';
+import { CHRONAL_INSIGHTS } from '../data/chronalInsights';
 import { GameRenderer } from '../engine/renderer';
 import { TimelineRecorder } from '../engine/recorder';
 import { isPositionSolid, tryPushCrate, updateParadoxAI, updatePuzzleObjects, TILE_SIZE } from '../engine/physics';
@@ -18,6 +29,8 @@ interface GameCanvasProps {
   onCheckpointReached: () => void;
   onCollectMemory?: (memoryId: string) => void;
   onCollectArtifact?: (artifactId: string) => void;
+  fragmentBalance?: number;
+  onSpendMemoryFragment?: () => boolean;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -30,6 +43,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onCheckpointReached,
   onCollectMemory,
   onCollectArtifact,
+  fragmentBalance = 0,
+  onSpendMemoryFragment,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -47,6 +62,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const [notification, setNotification] = useState<string | null>(null);
   const [paradoxAlert, setParadoxAlert] = useState<boolean>(false);
   const [isDead, setIsDead] = useState<boolean>(false);
+  const [isChronalInsightActive, setIsChronalInsightActive] = useState<boolean>(false);
+  const [chronalInsightBrief, setChronalInsightBrief] = useState<string | null>(null);
 
   // Mutable Game Loop State
   const stateRef = useRef({
@@ -102,6 +119,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     playerHeatmap: {} as Record<string, number>,
     lastHeatmapSample: 0,
     hasCheckpoint: false,
+    chronalInsight: null as ActiveChronalInsight | null,
   });
 
   // Show quick toast banner
@@ -151,6 +169,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     stateRef.current.isResetting = false;
     stateRef.current.deathTimer = 0;
     stateRef.current.hasCheckpoint = false;
+    stateRef.current.chronalInsight = null;
+    setIsChronalInsightActive(false);
+    setChronalInsightBrief(null);
     setIsDead(false);
     setTimeRemaining(30.0);
     setEchoCount(0);
@@ -287,6 +308,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         performTimelineReset();
       }
 
+      // C for Chronal Insight
+      if (e.key === 'c' || e.key === 'C') {
+        handleTriggerChronalInsight();
+      }
+
       // E or Space for Interaction
       if (e.key === 'e' || e.key === 'E' || e.key === ' ') {
         handleInteract();
@@ -304,6 +330,70 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [currentLevelIndex]);
+
+  // Trigger Chronal Insight (Ghost path revelation)
+  const handleTriggerChronalInsight = () => {
+    const s = stateRef.current;
+    if (s.isResetting || isDead) return;
+
+    if (s.chronalInsight && s.chronalInsight.active) {
+      triggerNotification('CHRONAL INSIGHT ALREADY ACTIVE');
+      return;
+    }
+
+    const curLvl = LEVELS[currentLevelIndex];
+    const insightData = CHRONAL_INSIGHTS[curLvl.id];
+    if (!insightData) {
+      triggerNotification('NO CHRONAL INSIGHT RECORDED FOR THIS SECTOR');
+      return;
+    }
+
+    const available = fragmentBalance ?? 0;
+    if (available <= 0) {
+      soundManager.playInsightDenied();
+      triggerNotification('INSIGHT REQUIRES 1 MEMORY FRAGMENT (0 AVAILABLE)');
+      return;
+    }
+
+    if (onSpendMemoryFragment) {
+      const success = onSpendMemoryFragment();
+      if (!success) {
+        soundManager.playInsightDenied();
+        triggerNotification('NO MEMORY FRAGMENTS AVAILABLE');
+        return;
+      }
+    }
+
+    // Success! Play chime, generate aura particles, and activate hint
+    soundManager.playChronalInsight();
+    triggerNotification('CHRONAL INSIGHT ACTIVE // GHOST REVELATION UNFOLDING', 3500);
+
+    const firstStep = insightData.steps[0] || { x: curLvl.playerSpawn.x, y: curLvl.playerSpawn.y };
+    s.chronalInsight = {
+      active: true,
+      timer: 14.0,
+      maxTimer: 14.0,
+      data: insightData,
+      ghostX: firstStep.x,
+      ghostY: firstStep.y,
+      ghostDir: 'right',
+      activeStepIdx: 0,
+      alpha: 1.0,
+    };
+    setIsChronalInsightActive(true);
+    setChronalInsightBrief(insightData.solutionBrief);
+
+    // Initial golden burst particles
+    for (let i = 0; i < 20; i++) {
+      rendererRef.current.addParticle(
+        (firstStep.x + 0.5) * TILE_SIZE,
+        (firstStep.y + 0.5) * TILE_SIZE,
+        '#fbbf24',
+        Math.random() * 3 + 1,
+        1.2
+      );
+    }
+  };
 
   // Handle Player Interaction
   const handleInteract = () => {
@@ -761,6 +851,45 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
+      // 5b. Update Chronal Insight simulation
+      if (s.chronalInsight && s.chronalInsight.active) {
+        s.chronalInsight.timer -= dt;
+        if (s.chronalInsight.timer <= 0) {
+          s.chronalInsight.active = false;
+          setIsChronalInsightActive(false);
+          setChronalInsightBrief(null);
+        } else {
+          const steps = s.chronalInsight.data.steps;
+          if (steps && steps.length > 1) {
+            const totalPathDuration = s.chronalInsight.maxTimer - 1.5;
+            const elapsed = s.chronalInsight.maxTimer - s.chronalInsight.timer;
+            const progress = (elapsed % totalPathDuration) / totalPathDuration;
+            const stepFraction = progress * (steps.length - 1);
+            const fromIdx = Math.floor(stepFraction);
+            const toIdx = Math.min(steps.length - 1, fromIdx + 1);
+            const t = stepFraction - fromIdx;
+
+            const fromStep = steps[fromIdx];
+            const toStep = steps[toIdx];
+
+            s.chronalInsight.ghostX = fromStep.x + (toStep.x - fromStep.x) * t;
+            s.chronalInsight.ghostY = fromStep.y + (toStep.y - fromStep.y) * t;
+            s.chronalInsight.activeStepIdx = toIdx;
+
+            const dx = toStep.x - fromStep.x;
+            const dy = toStep.y - fromStep.y;
+            if (Math.abs(dx) > Math.abs(dy)) {
+              s.chronalInsight.ghostDir = dx >= 0 ? 'right' : 'left';
+            } else {
+              s.chronalInsight.ghostDir = dy >= 0 ? 'down' : 'up';
+            }
+
+            // Alpha fade out near completion
+            s.chronalInsight.alpha = Math.min(1, s.chronalInsight.timer / 1.5);
+          }
+        }
+      }
+
       // 6. Check Checkpoints and Exit Portal
       for (const obj of s.objects) {
         const pBox = { x: s.player.x, y: s.player.y, width: s.player.width, height: s.player.height };
@@ -829,7 +958,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             s.resetFlash,
             s.deathTimer,
             s.currentRoomState,
-            s.observerEntity
+            s.observerEntity,
+            s.chronalInsight
           );
         }
       }
@@ -881,6 +1011,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         paradoxAlert={paradoxAlert}
         onManualReset={performTimelineReset}
         onPause={onPauseGame}
+        fragmentBalance={fragmentBalance}
+        isChronalInsightActive={isChronalInsightActive}
+        chronalInsightBrief={chronalInsightBrief}
+        onTriggerChronalInsight={handleTriggerChronalInsight}
       />
 
       {/* Death Overlay Message */}

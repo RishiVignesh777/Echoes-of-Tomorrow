@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw, AlertTriangle, Users, Compass, Volume2 } from 'lucide-react';
+import { RotateCcw, AlertTriangle, Users, Compass, Volume2, Sparkles } from 'lucide-react';
 import { LevelData } from '../types';
 
 interface HUDProps {
@@ -14,6 +14,10 @@ interface HUDProps {
   paradoxAlert: boolean;
   onManualReset: () => void;
   onPause: () => void;
+  fragmentBalance?: number;
+  isChronalInsightActive?: boolean;
+  chronalInsightBrief?: string | null;
+  onTriggerChronalInsight?: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -28,6 +32,10 @@ export const HUD: React.FC<HUDProps> = ({
   paradoxAlert,
   onManualReset,
   onPause,
+  fragmentBalance = 0,
+  isChronalInsightActive = false,
+  chronalInsightBrief = null,
+  onTriggerChronalInsight,
 }) => {
   const percentage = Math.max(0, Math.min(100, (timeRemaining / totalTime) * 100));
   const isUrgent = timeRemaining <= 8 && !isResetting;
@@ -97,16 +105,50 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </div>
 
-          {/* Quick Rewind Hint / Button */}
-          <button
-            id="hud-rewind-btn"
-            onClick={onManualReset}
-            className="mt-2 text-[11px] bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-cyan-300 px-3 py-1 rounded-full border border-neutral-700 pointer-events-auto transition flex items-center gap-1.5 shadow-sm active:scale-95"
-            title="Instantly reset current timeline to spawn next Echo (R)"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>REWIND [R]</span>
-          </button>
+          <div className="flex items-center gap-2 mt-2">
+            {/* Quick Rewind Hint / Button */}
+            <button
+              id="hud-rewind-btn"
+              onClick={onManualReset}
+              className="text-[11px] bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-cyan-300 px-3 py-1 rounded-full border border-neutral-700 pointer-events-auto transition flex items-center gap-1.5 shadow-sm active:scale-95"
+              title="Instantly reset current timeline to spawn next Echo (R)"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>REWIND [R]</span>
+            </button>
+
+            {/* Chronal Insight Button */}
+            <button
+              id="hud-chronal-insight-btn"
+              onClick={onTriggerChronalInsight}
+              className={`text-[11px] px-3 py-1 rounded-full border pointer-events-auto transition flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                isChronalInsightActive
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-200 animate-pulse'
+                  : fragmentBalance > 0
+                  ? 'bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 hover:text-amber-100 border-amber-500/40 hover:border-amber-400 shadow-amber-950/40'
+                  : 'bg-neutral-900/60 hover:bg-neutral-900 text-neutral-500 border-neutral-800'
+              }`}
+              title={
+                fragmentBalance > 0
+                  ? 'Spend 1 Memory Fragment to reveal ghost path for this puzzle (Hotkey: C)'
+                  : 'Requires 1 Memory Fragment (Explore sectors to collect shards) (Hotkey: C)'
+              }
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${fragmentBalance > 0 ? 'text-amber-400' : 'text-neutral-500'}`} />
+              <span className="font-semibold">
+                {isChronalInsightActive ? 'GHOST PATH ACTIVE [C]' : 'INSIGHT [C]'}
+              </span>
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                  fragmentBalance > 0
+                    ? 'bg-amber-900/80 text-amber-200 border border-amber-500/40'
+                    : 'bg-neutral-800 text-neutral-500'
+                }`}
+              >
+                {fragmentBalance}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Top Right: Echoes & System Status */}
@@ -133,8 +175,20 @@ export const HUD: React.FC<HUDProps> = ({
         </div>
       </div>
 
-      {/* Center Toast / Notification Alerts */}
+      {/* Center Toast / Notification Alerts & Chronal Insight banner */}
       <div className="flex flex-col items-center justify-center gap-2">
+        {isChronalInsightActive && chronalInsightBrief && (
+          <div className="bg-amber-950/95 border border-amber-400 text-amber-100 px-5 py-2.5 rounded-xl shadow-2xl backdrop-blur-md max-w-xl mx-auto pointer-events-auto flex flex-col gap-1 text-center animate-fadeIn">
+            <div className="flex items-center justify-center gap-2 text-xs text-amber-400 font-bold uppercase tracking-wider font-pixel text-[10px]">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+              CHRONAL INSIGHT // OPTIMAL PATH REVEALED
+            </div>
+            <p className="text-xs text-amber-200/90 leading-relaxed font-mono">
+              {chronalInsightBrief}
+            </p>
+          </div>
+        )}
+
         {notification && (
           <div className="bg-cyan-950/90 border border-cyan-400 text-cyan-200 px-5 py-2 rounded-lg font-pixel text-xs tracking-wider uppercase shadow-xl animate-bounce">
             {notification}
@@ -172,7 +226,11 @@ export const HUD: React.FC<HUDProps> = ({
           </span>
           <span className="flex items-center gap-1">
             <span className="bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-[10px] font-bold">R</span>
-            <span>Early Rewind</span>
+            <span>Rewind</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="bg-amber-900/60 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">C</span>
+            <span className="text-amber-200/90">Chronal Insight</span>
           </span>
         </div>
 

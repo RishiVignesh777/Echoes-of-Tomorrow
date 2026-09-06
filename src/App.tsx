@@ -61,6 +61,12 @@ export default function App() {
           memoryFragmentsCollected: parsed.memoryFragmentsCollected || [],
           temporalArtifactsCollected: parsed.temporalArtifactsCollected || [],
           completedChallenges: parsed.completedChallenges || [],
+          fragmentBalance:
+            parsed.fragmentBalance !== undefined
+              ? parsed.fragmentBalance
+              : Math.max(1, (parsed.memoryFragmentsCollected?.length || 0) + 1 - (parsed.spentMemoryFragments || 0)),
+          spentMemoryFragments: parsed.spentMemoryFragments || 0,
+          chronalInsightsUsed: parsed.chronalInsightsUsed || 0,
           timestamp: parsed.timestamp || Date.now(),
         };
 
@@ -102,6 +108,9 @@ export default function App() {
       memoryFragmentsCollected: savedGame?.memoryFragmentsCollected || [],
       temporalArtifactsCollected: savedGame?.temporalArtifactsCollected || [],
       completedChallenges: savedGame?.completedChallenges || [],
+      fragmentBalance: savedGame?.fragmentBalance !== undefined ? savedGame.fragmentBalance : 1,
+      spentMemoryFragments: savedGame?.spentMemoryFragments || 0,
+      chronalInsightsUsed: savedGame?.chronalInsightsUsed || 0,
       timestamp: Date.now(),
     };
     setSavedGame(updatedSave);
@@ -150,16 +159,36 @@ export default function App() {
 
   const handleCollectMemory = (memoryId: string) => {
     if (!savedGame) return;
-    if (!savedGame.memoryFragmentsCollected.includes(memoryId)) {
-      const updated: SavedGame = {
-        ...savedGame,
-        memoryFragmentsCollected: [...savedGame.memoryFragmentsCollected, memoryId],
-      };
-      setSavedGame(updated);
-      try {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(updated));
-      } catch {}
-    }
+    const isNew = !savedGame.memoryFragmentsCollected.includes(memoryId);
+    const updated: SavedGame = {
+      ...savedGame,
+      memoryFragmentsCollected: isNew
+        ? [...savedGame.memoryFragmentsCollected, memoryId]
+        : savedGame.memoryFragmentsCollected,
+      fragmentBalance: (savedGame.fragmentBalance ?? 1) + (isNew ? 1 : 0),
+    };
+    setSavedGame(updated);
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleSpendMemoryFragment = (): boolean => {
+    if (!savedGame) return false;
+    const currentBalance = savedGame.fragmentBalance ?? 1;
+    if (currentBalance <= 0) return false;
+
+    const updated: SavedGame = {
+      ...savedGame,
+      fragmentBalance: currentBalance - 1,
+      spentMemoryFragments: (savedGame.spentMemoryFragments || 0) + 1,
+      chronalInsightsUsed: (savedGame.chronalInsightsUsed || 0) + 1,
+    };
+    setSavedGame(updated);
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(updated));
+    } catch {}
+    return true;
   };
 
   const handleCollectArtifact = (artifactId: string) => {
@@ -224,6 +253,8 @@ export default function App() {
           onCheckpointReached={() => saveProgress(currentLevelIndex, true)}
           onCollectMemory={handleCollectMemory}
           onCollectArtifact={handleCollectArtifact}
+          fragmentBalance={savedGame?.fragmentBalance ?? 1}
+          onSpendMemoryFragment={handleSpendMemoryFragment}
         />
       )}
 

@@ -119,6 +119,48 @@ export const MEMORY_FRAGMENTS: Record<string, MemoryFragment> = {
       '"Let tomorrow begin."',
     ],
   },
+  frag_lost_1: {
+    id: 'frag_lost_1',
+    title: 'THE DISCARDED ITERATION',
+    subtitle: 'LOST WING OBSERVATION',
+    speaker: 'Research Assistant K. Vane',
+    era: 'Cycle 088 // 2090',
+    sectorId: 7,
+    sectorName: 'Sector 07: The Lost Wing',
+    content: [
+      '"They sealed this entire wing when the first transfer pod imploded."',
+      '"We didn’t lose the subject. We lost his present moment. He became a standing wave of probability."',
+      '"If you hear boots pacing behind the steam pipes, do not call out. You will only disturb what you will become."',
+    ],
+  },
+  frag_paradox_1: {
+    id: 'frag_paradox_1',
+    title: 'ADAPTIVE BEHAVIOR',
+    subtitle: 'CONTAINMENT INCIDENT LOG',
+    speaker: 'Containment Specialist Diaz',
+    era: 'Cycle 512 // 2090',
+    sectorId: 9,
+    sectorName: 'Sector 09: Containment Breach',
+    content: [
+      '"The entities are no longer just retracing past footsteps. They are learning our evasive maneuvers."',
+      '"When we set off decoy pulse generators, they hesitate now. They scan the frequencies for biological heat signatures."',
+      '"The only defense left is total synchronization across timelines."',
+    ],
+  },
+  frag_collapse_1: {
+    id: 'frag_collapse_1',
+    title: 'THE QUANTUM HORIZON',
+    subtitle: 'DIMENSIONAL FRACTURE',
+    speaker: 'Dr. Aris Thorne',
+    era: 'Cycle 890 // 2090',
+    sectorId: 11,
+    sectorName: 'Sector 11: Fractured Labs',
+    content: [
+      '"Three states. State A is where we built the machine. State B is where the coolant broke. State C is what will remain in ten thousand years."',
+      '"They are touching now. The walls are oscillating between steel, rust, and phase-glass."',
+      '"Step carefully. Reality is thin enough to breathe through."',
+    ],
+  },
 };
 
 export const TEMPORAL_ARTIFACTS: Record<string, TemporalArtifact> = {

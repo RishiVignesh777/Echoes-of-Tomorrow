@@ -99,68 +99,84 @@ export const CodexModal: React.FC<CodexModalProps> = ({ savedGame, onClose, onSt
 
         {/* Tab 1: Memory Fragments */}
         {tab === 'memories' && (
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-            {/* List */}
-            <div className="w-full md:w-72 bg-neutral-950/70 border-b md:border-b-0 md:border-r border-neutral-800 p-3 space-y-2 overflow-y-auto shrink-0">
-              {Object.values(MEMORY_FRAGMENTS).map((frag) => {
-                const isUnlocked = collectedMemories.includes(frag.id);
-                const isSelected = selectedMemory?.id === frag.id;
-                return (
-                  <button
-                    key={frag.id}
-                    onClick={() => {
-                      setSelectedMemory(frag);
-                      soundManager.playButtonClick();
-                    }}
-                    className={`w-full p-3 rounded-xl border text-left flex items-start justify-between transition ${
-                      isSelected
-                        ? 'bg-cyan-950/60 border-cyan-500 text-white'
-                        : isUnlocked
-                        ? 'bg-neutral-900/60 border-neutral-800 text-neutral-300 hover:bg-neutral-800'
-                        : 'bg-neutral-950/40 border-neutral-900 text-neutral-600'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-1.5 text-xs font-bold font-pixel">
-                        <span className={isUnlocked ? 'text-cyan-400' : 'text-neutral-600'}>{frag.title}</span>
-                      </div>
-                      <div className="text-[10px] text-neutral-400 truncate mt-0.5">{frag.speaker}</div>
-                      <div className="text-[9px] text-neutral-500">{frag.sectorName}</div>
-                    </div>
-                    {isUnlocked ? (
-                      <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
-                    ) : (
-                      <Lock className="w-4 h-4 text-neutral-600 shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Chronal Insight Balance bar */}
+            <div className="px-6 py-2 bg-amber-950/50 border-b border-amber-500/30 flex items-center justify-between text-xs text-amber-300">
+              <span className="flex items-center gap-2 font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>CHRONAL INSIGHT BALANCE:</span>
+                <span className="font-mono text-amber-100 bg-amber-900/80 px-2.5 py-0.5 rounded-full border border-amber-500/50 font-bold">
+                  {savedGame?.fragmentBalance ?? 1} SHARDS AVAILABLE
+                </span>
+              </span>
+              <span className="text-[11px] text-amber-300/80 font-mono">
+                Total Insights Used: <strong className="text-amber-200">{savedGame?.chronalInsightsUsed ?? 0}</strong>
+              </span>
             </div>
 
-            {/* Viewer */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              {selectedMemory ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-cyan-950/30 border border-cyan-500/30 rounded-xl">
-                    <div className="flex items-center justify-between text-xs text-cyan-400 mb-1">
-                      <span className="font-bold">{selectedMemory.speaker}</span>
-                      <span className="text-[10px] font-mono">{selectedMemory.era}</span>
-                    </div>
-                    <h3 className="text-lg font-pixel font-bold text-white mb-1">{selectedMemory.title}</h3>
-                    <p className="text-xs text-cyan-300/80">{selectedMemory.subtitle} // {selectedMemory.sectorName}</p>
-                  </div>
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+              {/* List */}
+              <div className="w-full md:w-72 bg-neutral-950/70 border-b md:border-b-0 md:border-r border-neutral-800 p-3 space-y-2 overflow-y-auto shrink-0">
+                {Object.values(MEMORY_FRAGMENTS).map((frag) => {
+                  const isUnlocked = collectedMemories.includes(frag.id);
+                  const isSelected = selectedMemory?.id === frag.id;
+                  return (
+                    <button
+                      key={frag.id}
+                      onClick={() => {
+                        setSelectedMemory(frag);
+                        soundManager.playButtonClick();
+                      }}
+                      className={`w-full p-3 rounded-xl border text-left flex items-start justify-between transition ${
+                        isSelected
+                          ? 'bg-cyan-950/60 border-cyan-500 text-white'
+                          : isUnlocked
+                          ? 'bg-neutral-900/60 border-neutral-800 text-neutral-300 hover:bg-neutral-800'
+                          : 'bg-neutral-950/40 border-neutral-900 text-neutral-600'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5 text-xs font-bold font-pixel">
+                          <span className={isUnlocked ? 'text-cyan-400' : 'text-neutral-600'}>{frag.title}</span>
+                        </div>
+                        <div className="text-[10px] text-neutral-400 truncate mt-0.5">{frag.speaker}</div>
+                        <div className="text-[9px] text-neutral-500">{frag.sectorName}</div>
+                      </div>
+                      {isUnlocked ? (
+                        <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                      ) : (
+                        <Lock className="w-4 h-4 text-neutral-600 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-                  <div className="p-5 bg-neutral-950/80 border border-neutral-800 rounded-xl space-y-3 font-mono text-sm leading-relaxed text-neutral-200">
-                    {selectedMemory.content.map((paragraph, idx) => (
-                      <p key={idx} className="italic text-cyan-100/90">{paragraph}</p>
-                    ))}
+              {/* Viewer */}
+              <div className="flex-1 p-6 overflow-y-auto">
+                {selectedMemory ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-cyan-950/30 border border-cyan-500/30 rounded-xl">
+                      <div className="flex items-center justify-between text-xs text-cyan-400 mb-1">
+                        <span className="font-bold">{selectedMemory.speaker}</span>
+                        <span className="text-[10px] font-mono">{selectedMemory.era}</span>
+                      </div>
+                      <h3 className="text-lg font-pixel font-bold text-white mb-1">{selectedMemory.title}</h3>
+                      <p className="text-xs text-cyan-300/80">{selectedMemory.subtitle} // {selectedMemory.sectorName}</p>
+                    </div>
+
+                    <div className="p-5 bg-neutral-950/80 border border-neutral-800 rounded-xl space-y-3 font-mono text-sm leading-relaxed text-neutral-200">
+                      {selectedMemory.content.map((paragraph, idx) => (
+                        <p key={idx} className="italic text-cyan-100/90">{paragraph}</p>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center text-neutral-500 text-xs">
-                  Select a Memory Fragment from the list
-                </div>
-              )}
+                ) : (
+                  <div className="h-full flex items-center justify-center text-neutral-500 text-xs">
+                    Select a Memory Fragment from the list
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
