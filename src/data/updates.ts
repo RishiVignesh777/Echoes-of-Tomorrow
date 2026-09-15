@@ -1,8 +1,32 @@
 import { UpdateLogEntry } from '../types';
 
-export const CURRENT_GAME_VERSION = '2.0';
+export const CURRENT_GAME_VERSION = '2.1';
 
 export const UPDATE_LOGS: UpdateLogEntry[] = [
+  {
+    version: '2.1',
+    title: 'CHRONAL INSIGHT & REBIND MATRIX',
+    releaseDate: '2091-04-15',
+    description:
+      'Empowering operatives with temporal guidance and tailored neural inputs: spend collected Memory Fragments to manifest Chronal Insights that reveal puzzle path trajectories, and fully customize keyboard controls with smart key remapping.',
+    isMajor: false,
+    newFeatures: [
+      'Chronal Insight System: Spend 1 collected Memory Fragment to project an optimal ghost path through complex puzzle rooms.',
+      'Custom Key Remapping Interface: Remap movement and action keys in both Main Menu and Pause Menu with persistent localStorage storage.',
+      'Keyboard Layout Presets: Quick-select presets including WASD Standard, Arrow Keys, ESDF Home-Row, and ZQSD (AZERTY).',
+      'Smart Key Swapping: Automatic conflict resolution seamlessly swaps keys without leaving actions unassigned.',
+      'Dynamic HUD Adaptation: In-game HUD hints and pause menus automatically reflect user-customized key bindings.',
+    ],
+    improvements: [
+      'Refined settings modal architecture into a clean tabbed view for audio, visuals, and controls.',
+      'Enhanced key formatting for arrows, space, backspace, and escape keys.',
+      'Real-time hotkey labels in HUD action bar.',
+    ],
+    fixes: [
+      'Fixed input event leakage when remapping keys in menus.',
+      'Preserved secondary arrow navigation when custom letter bindings are chosen.',
+    ],
+  },
   {
     version: '2.0',
     title: 'THE COLLAPSE',

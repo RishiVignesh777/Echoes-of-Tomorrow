@@ -4,6 +4,7 @@ import { GameSettings, SavedGame } from '../types';
 import { LEVELS } from '../data/levels';
 import { CURRENT_GAME_VERSION } from '../data/updates';
 import { soundManager } from '../audio/soundManager';
+import { SettingsView } from './SettingsView';
 
 interface MainMenuProps {
   savedGame: SavedGame | null;
@@ -198,119 +199,30 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
       {/* Settings View */}
       {view === 'settings' && (
-        <div className="z-10 w-full max-w-md bg-neutral-900/90 border border-cyan-500/60 rounded-xl p-6 shadow-2xl">
-          <h3 className="text-lg font-pixel text-cyan-300 text-center mb-4">SETTINGS</h3>
-          <div className="space-y-4 text-xs text-neutral-300 mb-6">
+        <div className="z-10 w-full max-w-xl bg-neutral-900/95 border border-cyan-500/60 rounded-xl p-6 shadow-2xl max-h-[85vh] flex flex-col">
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-neutral-800 shrink-0">
             <div>
-              <div className="flex justify-between mb-1">
-                <span>Master Volume</span>
-                <span>{Math.round(settings.masterVolume * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={settings.masterVolume}
-                onChange={(e) =>
-                  onUpdateSettings({ ...settings, masterVolume: parseFloat(e.target.value) })
-                }
-                className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
-              />
+              <h3 className="text-lg font-pixel text-cyan-300">FACILITY CONFIGURATION</h3>
+              <p className="text-xs text-neutral-400">Audio, Visuals & Keyboard Remapping</p>
             </div>
-
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>Music & Synth</span>
-                <span>{Math.round(settings.musicVolume * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={settings.musicVolume}
-                onChange={(e) =>
-                  onUpdateSettings({ ...settings, musicVolume: parseFloat(e.target.value) })
-                }
-                className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>Ambient Drone & Temporal Static</span>
-                <span>{Math.round((settings.ambientVolume ?? 0.8) * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={settings.ambientVolume ?? 0.8}
-                onChange={(e) =>
-                  onUpdateSettings({ ...settings, ambientVolume: parseFloat(e.target.value) })
-                }
-                className="w-full accent-teal-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>Sound Effects (SFX)</span>
-                <span>{Math.round(settings.sfxVolume * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={settings.sfxVolume}
-                onChange={(e) =>
-                  onUpdateSettings({ ...settings, sfxVolume: parseFloat(e.target.value) })
-                }
-                className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded cursor-pointer"
-              />
-            </div>
-
-            <div className="pt-2 border-t border-neutral-800 space-y-2">
-              <label className="flex items-center justify-between p-2 rounded bg-neutral-950/60 cursor-pointer">
-                <span>Screen Shake</span>
-                <input
-                  type="checkbox"
-                  checked={settings.screenShake}
-                  onChange={(e) => onUpdateSettings({ ...settings, screenShake: e.target.checked })}
-                  className="accent-cyan-400 w-4 h-4 rounded"
-                />
-              </label>
-
-              <label className="flex items-center justify-between p-2 rounded bg-neutral-950/60 cursor-pointer">
-                <span>CRT Scanlines & Temporal Glitch</span>
-                <input
-                  type="checkbox"
-                  checked={settings.crtEffects}
-                  onChange={(e) => onUpdateSettings({ ...settings, crtEffects: e.target.checked })}
-                  className="accent-cyan-400 w-4 h-4 rounded"
-                />
-              </label>
-
-              <label className="flex items-center justify-between p-2 rounded bg-neutral-950/60 cursor-pointer">
-                <span>Reduced FX (Performance)</span>
-                <input
-                  type="checkbox"
-                  checked={settings.reducedFX}
-                  onChange={(e) => onUpdateSettings({ ...settings, reducedFX: e.target.checked })}
-                  className="accent-cyan-400 w-4 h-4 rounded"
-                />
-              </label>
-            </div>
+            <button
+              onClick={() => {
+                soundManager.playButtonClick();
+                setView('main');
+              }}
+              className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-300 rounded-lg transition"
+            >
+              BACK
+            </button>
           </div>
-          <button
-            onClick={() => setView('main')}
-            className="w-full py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-lg font-semibold text-sm transition"
-          >
-            BACK
-          </button>
+          <div className="flex-1 overflow-hidden">
+            <SettingsView
+              settings={settings}
+              onUpdateSettings={onUpdateSettings}
+              onClose={() => setView('main')}
+              inGame={false}
+            />
+          </div>
         </div>
       )}
 

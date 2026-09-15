@@ -1,6 +1,7 @@
 import React from 'react';
 import { RotateCcw, AlertTriangle, Users, Compass, Volume2, Sparkles } from 'lucide-react';
-import { LevelData } from '../types';
+import { LevelData, KeyBindings, DEFAULT_KEY_BINDINGS } from '../types';
+import { formatKeyName } from '../utils/keyFormat';
 
 interface HUDProps {
   level: LevelData;
@@ -18,6 +19,7 @@ interface HUDProps {
   isChronalInsightActive?: boolean;
   chronalInsightBrief?: string | null;
   onTriggerChronalInsight?: () => void;
+  keyBindings?: KeyBindings;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -36,7 +38,9 @@ export const HUD: React.FC<HUDProps> = ({
   isChronalInsightActive = false,
   chronalInsightBrief = null,
   onTriggerChronalInsight,
+  keyBindings,
 }) => {
+  const bindings = keyBindings || DEFAULT_KEY_BINDINGS;
   const percentage = Math.max(0, Math.min(100, (timeRemaining / totalTime) * 100));
   const isUrgent = timeRemaining <= 8 && !isResetting;
   const seconds = Math.floor(timeRemaining);
@@ -136,7 +140,9 @@ export const HUD: React.FC<HUDProps> = ({
             >
               <Sparkles className={`w-3.5 h-3.5 ${fragmentBalance > 0 ? 'text-amber-400' : 'text-neutral-500'}`} />
               <span className="font-semibold">
-                {isChronalInsightActive ? 'GHOST PATH ACTIVE [C]' : 'INSIGHT [C]'}
+                {isChronalInsightActive
+                  ? `GHOST PATH ACTIVE [${formatKeyName(bindings.chronalInsight)}]`
+                  : `INSIGHT [${formatKeyName(bindings.chronalInsight)}]`}
               </span>
               <span
                 className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
@@ -170,7 +176,7 @@ export const HUD: React.FC<HUDProps> = ({
             onClick={onPause}
             className="bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white px-3 py-1.5 rounded-lg border border-neutral-700 text-xs pointer-events-auto transition active:scale-95 flex items-center gap-1"
           >
-            <span>PAUSE [ESC]</span>
+            <span>PAUSE [{formatKeyName(bindings.pause)}]</span>
           </button>
         </div>
       </div>
@@ -211,26 +217,30 @@ export const HUD: React.FC<HUDProps> = ({
 
       {/* Bottom Bar: Action Hints */}
       <div className="flex justify-between items-end w-full text-xs text-neutral-400">
-        <div className="bg-neutral-950/80 border border-neutral-800/80 rounded-md px-3 py-1.5 backdrop-blur flex items-center gap-4">
+        <div className="bg-neutral-950/80 border border-neutral-800/80 rounded-md px-3 py-1.5 backdrop-blur flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <span className="bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-[10px] font-bold">W A S D</span>
+            <span className="bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-[10px] font-bold">
+              {formatKeyName(bindings.moveUp)} {formatKeyName(bindings.moveLeft)} {formatKeyName(bindings.moveDown)} {formatKeyName(bindings.moveRight)}
+            </span>
             <span>Move</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-[10px] font-bold">E</span>
+            <span className="bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-[10px] font-bold">
+              {formatKeyName(bindings.interact)}
+            </span>
             <span>Interact</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-[10px] font-bold">SPACE</span>
-            <span>Action</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-[10px] font-bold">R</span>
+            <span className="bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-[10px] font-bold">
+              {formatKeyName(bindings.rewind)}
+            </span>
             <span>Rewind</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="bg-amber-900/60 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">C</span>
-            <span className="text-amber-200/90">Chronal Insight</span>
+            <span className="bg-amber-900/60 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">
+              {formatKeyName(bindings.chronalInsight)}
+            </span>
+            <span className="text-amber-200/90">Insight</span>
           </span>
         </div>
 

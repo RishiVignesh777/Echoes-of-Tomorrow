@@ -9,6 +9,7 @@ import {
   PuzzleObject,
   StoryLog,
   ActiveChronalInsight,
+  DEFAULT_KEY_BINDINGS,
 } from '../types';
 import { LEVELS } from '../data/levels';
 import { STORY_LOGS } from '../data/story';
@@ -295,27 +296,49 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // Keyboard Input Handlers
   useEffect(() => {
+    const bindings = settings.keyBindings || DEFAULT_KEY_BINDINGS;
+    const pauseKey = (bindings.pause || 'escape').toLowerCase();
+    const rewindKey = (bindings.rewind || 'r').toLowerCase();
+    const insightKey = (bindings.chronalInsight || 'c').toLowerCase();
+    const interactKey = (bindings.interact || 'e').toLowerCase();
+    const restartKey = bindings.restartRoom ? bindings.restartRoom.toLowerCase() : null;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      stateRef.current.keys[e.key.toLowerCase()] = true;
+      const key = e.key.toLowerCase();
+      stateRef.current.keys[key] = true;
 
-      // ESC for Pause
-      if (e.key === 'Escape') {
+      // ESC or custom Pause
+      if (key === pauseKey || (pauseKey !== 'escape' && key === 'escape')) {
         onPauseGame();
+        return;
       }
 
-      // R for Manual Rewind
-      if (e.key === 'r' || e.key === 'R') {
+      // Manual Rewind
+      if (key === rewindKey) {
         performTimelineReset();
+        return;
       }
 
-      // C for Chronal Insight
-      if (e.key === 'c' || e.key === 'C') {
+      // Chronal Insight
+      if (key === insightKey) {
         handleTriggerChronalInsight();
+        return;
       }
 
       // E or Space for Interaction
-      if (e.key === 'e' || e.key === 'E' || e.key === ' ') {
+      if (
+        key === interactKey ||
+        (interactKey !== ' ' && key === ' ') ||
+        (interactKey !== 'enter' && key === 'enter')
+      ) {
         handleInteract();
+        return;
+      }
+
+      // Quick room restart
+      if (restartKey && key === restartKey) {
+        performTimelineReset();
+        return;
       }
     };
 
@@ -329,7 +352,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [currentLevelIndex]);
+  }, [currentLevelIndex, settings.keyBindings]);
 
   // Trigger Chronal Insight (Ghost path revelation)
   const handleTriggerChronalInsight = () => {
@@ -683,10 +706,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         let dx = 0;
         let dy = 0;
 
-        if (s.keys['w'] || s.keys['arrowup']) dy -= 1;
-        if (s.keys['s'] || s.keys['arrowdown']) dy += 1;
-        if (s.keys['a'] || s.keys['arrowleft']) dx -= 1;
-        if (s.keys['d'] || s.keys['arrowright']) dx += 1;
+        const bindings = settings.keyBindings || DEFAULT_KEY_BINDINGS;
+        const upKey = (bindings.moveUp || 'w').toLowerCase();
+        const downKey = (bindings.moveDown || 's').toLowerCase();
+        const leftKey = (bindings.moveLeft || 'a').toLowerCase();
+        const rightKey = (bindings.moveRight || 'd').toLowerCase();
+
+        if (s.keys[upKey] || (upKey !== 'arrowup' && s.keys['arrowup'])) dy -= 1;
+        if (s.keys[downKey] || (downKey !== 'arrowdown' && s.keys['arrowdown'])) dy += 1;
+        if (s.keys[leftKey] || (leftKey !== 'arrowleft' && s.keys['arrowleft'])) dx -= 1;
+        if (s.keys[rightKey] || (rightKey !== 'arrowright' && s.keys['arrowright'])) dx += 1;
 
         if (dx !== 0 && dy !== 0) {
           dx *= 0.7071;
@@ -1015,6 +1044,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         isChronalInsightActive={isChronalInsightActive}
         chronalInsightBrief={chronalInsightBrief}
         onTriggerChronalInsight={handleTriggerChronalInsight}
+        keyBindings={settings.keyBindings}
       />
 
       {/* Death Overlay Message */}

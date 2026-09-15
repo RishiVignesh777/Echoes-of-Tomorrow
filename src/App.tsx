@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GameSettings, SavedGame, StoryLog } from './types';
+import { DEFAULT_KEY_BINDINGS, GameSettings, SavedGame, StoryLog } from './types';
 import { MainMenu } from './components/MainMenu';
 import { GameCanvas } from './components/GameCanvas';
 import { PauseMenu } from './components/PauseMenu';
@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   crtEffects: true,
   reducedFX: false,
   showControlsOverlay: true,
+  keyBindings: DEFAULT_KEY_BINDINGS,
 };
 
 export default function App() {
@@ -42,7 +43,14 @@ export default function App() {
       const savedSettingsStr = localStorage.getItem(SETTINGS_KEY);
       if (savedSettingsStr) {
         const parsed = JSON.parse(savedSettingsStr);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...parsed,
+          keyBindings: {
+            ...DEFAULT_KEY_BINDINGS,
+            ...(parsed.keyBindings || {}),
+          },
+        });
       }
 
       const savedGameStr = localStorage.getItem(SAVE_KEY);

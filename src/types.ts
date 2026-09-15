@@ -240,6 +240,30 @@ export interface LevelData {
   };
 }
 
+export interface KeyBindings {
+  moveUp: string;
+  moveDown: string;
+  moveLeft: string;
+  moveRight: string;
+  interact: string;
+  rewind: string;
+  chronalInsight: string;
+  pause: string;
+  restartRoom?: string;
+}
+
+export const DEFAULT_KEY_BINDINGS: KeyBindings = {
+  moveUp: 'w',
+  moveDown: 's',
+  moveLeft: 'a',
+  moveRight: 'd',
+  interact: 'e',
+  rewind: 'r',
+  chronalInsight: 'c',
+  pause: 'escape',
+  restartRoom: 'backspace',
+};
+
 export interface GameSettings {
   masterVolume: number;
   musicVolume: number;
@@ -249,6 +273,7 @@ export interface GameSettings {
   crtEffects: boolean;
   reducedFX: boolean;
   showControlsOverlay: boolean;
+  keyBindings?: KeyBindings;
 }
 
 export interface TimeTrialRecord {
