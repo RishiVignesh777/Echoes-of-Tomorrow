@@ -1,8 +1,33 @@
 import { UpdateLogEntry } from '../types';
 
-export const CURRENT_GAME_VERSION = '2.1';
+export const CURRENT_GAME_VERSION = '2.2';
 
 export const UPDATE_LOGS: UpdateLogEntry[] = [
+  {
+    version: '2.2',
+    title: 'QUANTUM TRANSLOCATION MATRIX',
+    releaseDate: '2091-05-01',
+    description:
+      'Introducing linked TeleportPads and quantum displacement mechanics: operatives and temporal Echoes can now instantaneously travel between paired pads on the game board, routing physical presence and crate weight across spatial chasms and optical laser fields.',
+    isMajor: false,
+    newFeatures: [
+      'TeleportPad Component & Logic: Instant bidirectional and directed quantum translocation between linked pads on the board.',
+      'Echo Translocation Support: Recorded and live Echoes travel through active teleport pads, executing puzzle solutions in isolated chambers.',
+      'Crate Translocation: Push heavy storage crates into active teleport pads to warp them across chasms onto remote pressure plates.',
+      'Translocation Matrix HUD: Live quantum telemetry widget displaying pad links, frequency channels, synchronization states, and recharge meters.',
+      'Proximity Action Interface: Dedicated floating warp card with tactile "WARP NOW" action and keyboard trigger prompts.',
+      'Upgraded Sector 08 & Sector 12: Integrated paired TeleportPads across dual relay conduits and master confrontations.',
+    ],
+    improvements: [
+      'Rich multi-layer audio design with sub-bass quantum warp swells and harmonic crystalline chime chords.',
+      'Dynamic floor quantum tethers connecting linked pads with animated flowing energy particles.',
+      'Expanding warp shockwave ripple and fullscreen distortion flare upon translocation.',
+    ],
+    fixes: [
+      'Eliminated linear coordinate interpolation across map rifts during Echo teleport replay.',
+      'Added automated cooldown protection preventing infinite loop bouncing between paired pads.',
+    ],
+  },
   {
     version: '2.1',
     title: 'CHRONAL INSIGHT & REBIND MATRIX',

@@ -1,6 +1,6 @@
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
-export type PlayerAction = 'none' | 'interact' | 'push' | 'activate' | 'transfer' | 'decoy' | 'phase_shift';
+export type PlayerAction = 'none' | 'interact' | 'push' | 'activate' | 'transfer' | 'decoy' | 'phase_shift' | 'teleport';
 
 export interface RecordedFrame {
   timestamp: number; // time in ms from start of timeline
@@ -48,7 +48,8 @@ export type PuzzleObjectType =
   | 'temporal_core'
   | 'secret_console'
   | 'laser_barrier'
-  // New Mechanics & Objects from Updates 1.1 - 2.0
+  // New Mechanics & Objects from Updates 1.1 - 2.2
+  | 'teleport_pad'
   | 'echo_transfer_pod'
   | 'echo_transfer_console'
   | 'temporal_decoy'
@@ -69,6 +70,7 @@ export interface PuzzleObject {
   state: boolean | number | string; // e.g. isOpen, isPressed, etc.
   colorKey?: 'cyan' | 'amber' | 'emerald' | 'magenta' | 'red' | 'blue' | 'purple' | 'gold';
   linkedIds?: string[];
+  linkedPadId?: string;
   linkedPodId?: string;
   memoryId?: string;
   timerDuration?: number;

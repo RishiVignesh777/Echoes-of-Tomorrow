@@ -555,6 +555,43 @@ class SoundManager {
     osc.stop(now + 0.35);
   }
 
+  public playTeleportPad() {
+    if (!this.ctx || !this.sfxGain) return;
+    this.resume();
+    const now = this.ctx.currentTime;
+
+    // 1. Deep quantum sub-bass warp sweep
+    const warpOsc = this.ctx.createOscillator();
+    const warpGain = this.ctx.createGain();
+    warpOsc.type = 'sine';
+    warpOsc.frequency.setValueAtTime(120, now);
+    warpOsc.frequency.exponentialRampToValueAtTime(540, now + 0.32);
+    warpGain.gain.setValueAtTime(0.3, now);
+    warpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+    warpOsc.connect(warpGain);
+    warpGain.connect(this.sfxGain);
+    warpOsc.start(now);
+    warpOsc.stop(now + 0.32);
+
+    // 2. Translocation crystalline harmonic shimmer chord
+    const frequencies = [587.33, 880, 1174.66, 1760]; // D5, A5, D6, A6 chord
+    frequencies.forEach((freq, idx) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const chimeOsc = this.ctx.createOscillator();
+      const chimeGain = this.ctx.createGain();
+      const startTime = now + idx * 0.04;
+      chimeOsc.type = 'triangle';
+      chimeOsc.frequency.setValueAtTime(freq, startTime);
+      chimeOsc.frequency.exponentialRampToValueAtTime(freq * 1.05, startTime + 0.28);
+      chimeGain.gain.setValueAtTime(0.12, startTime);
+      chimeGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.28);
+      chimeOsc.connect(chimeGain);
+      chimeGain.connect(this.sfxGain);
+      chimeOsc.start(startTime);
+      chimeOsc.stop(startTime + 0.28);
+    });
+  }
+
   public playDecoyTrigger() {
     if (!this.ctx || !this.sfxGain) return;
     this.resume();

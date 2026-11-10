@@ -335,7 +335,179 @@ export class GameRenderer {
       const ow = obj.width * TILE_SIZE;
       const oh = obj.height * TILE_SIZE;
 
-      if (obj.type === 'echo_transfer_pod') {
+      if (obj.type === 'teleport_pad') {
+        // Quantum Linked Teleport Pad
+        const isActive = obj.state !== false;
+        const isRecharging = !!(obj.cooldownTimer && obj.cooldownTimer > 0);
+        const hasAnim = !!(obj.animTimer && obj.animTimer > 0);
+
+        // Color theme palette
+        let primaryColor = '#06b6d4';
+        let glowColor = '#22d3ee';
+        let lightRing = '#67e8f9';
+        let darkBase = '#09131f';
+        let tetherRgba = 'rgba(34, 211, 238, 0.45)';
+
+        if (obj.colorKey === 'magenta' || obj.colorKey === 'purple') {
+          primaryColor = '#d946ef';
+          glowColor = '#f0abfc';
+          lightRing = '#fae8ff';
+          darkBase = '#1a0d24';
+          tetherRgba = 'rgba(217, 70, 239, 0.45)';
+        } else if (obj.colorKey === 'amber' || obj.colorKey === 'gold') {
+          primaryColor = '#f59e0b';
+          glowColor = '#fbbf24';
+          lightRing = '#fef3c7';
+          darkBase = '#1c1409';
+          tetherRgba = 'rgba(245, 158, 11, 0.45)';
+        } else if (obj.colorKey === 'emerald') {
+          primaryColor = '#10b981';
+          glowColor = '#34d399';
+          lightRing = '#d1fae5';
+          darkBase = '#051b14';
+          tetherRgba = 'rgba(16, 185, 129, 0.45)';
+        }
+
+        const cx = ox + ow / 2;
+        const cy = oy + oh / 2;
+        const radius = ow / 2 - 2;
+
+        // Draw ethereal quantum tether between linked pads (draw once per linked pair)
+        const targetPad = objects.find(
+          (o) =>
+            o.type === 'teleport_pad' &&
+            o.id !== obj.id &&
+            (o.id === obj.linkedPadId ||
+              o.id === obj.linkedPodId ||
+              obj.linkedIds?.includes(o.id) ||
+              o.linkedPadId === obj.id)
+        );
+
+        if (targetPad && isActive && obj.id < targetPad.id) {
+          const tcx = targetPad.x * TILE_SIZE + (targetPad.width * TILE_SIZE) / 2;
+          const tcy = targetPad.y * TILE_SIZE + (targetPad.height * TILE_SIZE) / 2;
+
+          ctx.save();
+          ctx.strokeStyle = tetherRgba;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 6]);
+          ctx.lineDashOffset = -time * 24;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(tcx, tcy);
+          ctx.stroke();
+
+          // Subtle moving quantum spark on the tether line
+          const sparkT = (time * 0.75) % 1;
+          const sparkX = cx + (tcx - cx) * sparkT;
+          const sparkY = cy + (tcy - cy) * sparkT;
+          ctx.fillStyle = glowColor;
+          ctx.beginPath();
+          ctx.arc(sparkX, sparkY, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Base metallic octagon
+        ctx.fillStyle = isActive ? darkBase : '#1e293b';
+        ctx.beginPath();
+        const corner = 6;
+        ctx.moveTo(ox + corner, oy);
+        ctx.lineTo(ox + ow - corner, oy);
+        ctx.lineTo(ox + ow, oy + corner);
+        ctx.lineTo(ox + ow, oy + oh - corner);
+        ctx.lineTo(ox + ow - corner, oy + oh);
+        ctx.lineTo(ox + corner, oy + oh);
+        ctx.lineTo(ox, oy + oh - corner);
+        ctx.lineTo(ox, oy + corner);
+        ctx.closePath();
+        ctx.fill();
+
+        // Border ring
+        ctx.strokeStyle = isActive ? (isRecharging ? '#f59e0b' : primaryColor) : '#475569';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        if (isActive) {
+          // Outer rotating emitter nodes
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(time * 1.5);
+          ctx.strokeStyle = primaryColor;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius - 4, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // 4 peripheral node points
+          for (let i = 0; i < 4; i++) {
+            const angle = (i * Math.PI) / 2;
+            const px = Math.cos(angle) * (radius - 4);
+            const py = Math.sin(angle) * (radius - 4);
+            ctx.fillStyle = glowColor;
+            ctx.beginPath();
+            ctx.arc(px, py, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // Inner counter-rotating quantum vortex
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(-time * 2.5);
+          ctx.strokeStyle = lightRing;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 4]);
+          ctx.beginPath();
+          ctx.arc(0, 0, radius - 8, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+
+          // Pulsing singularity core
+          const corePulse = 3.5 + Math.sin(time * 6) * 1.5;
+          const radGrad = ctx.createRadialGradient(cx, cy, 1, cx, cy, corePulse + 4);
+          radGrad.addColorStop(0, '#ffffff');
+          radGrad.addColorStop(0.4, glowColor);
+          radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = radGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, corePulse + 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Expanding shockwave ripple if recently teleported
+          if (hasAnim) {
+            const progress = 1 - (obj.animTimer || 0) / 0.6;
+            const ripRadius = radius + progress * 14;
+            const ripAlpha = Math.max(0, 1 - progress);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${ripAlpha * 0.8})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, ripRadius, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          // Recharging circular arc gauge
+          if (isRecharging && obj.cooldownTimer) {
+            const cdTotal = obj.cooldown || 1.2;
+            const frac = Math.max(0, Math.min(1, 1 - obj.cooldownTimer / cdTotal));
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius - 1, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+            ctx.stroke();
+          }
+        } else {
+          // Offline / Locked warning cross
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(cx - 5, cy - 5);
+          ctx.lineTo(cx + 5, cy + 5);
+          ctx.moveTo(cx + 5, cy - 5);
+          ctx.lineTo(cx - 5, cy + 5);
+          ctx.stroke();
+        }
+      } else if (obj.type === 'echo_transfer_pod') {
         // Quantum Echo Transfer Pad
         const isTarget = !!obj.state;
         ctx.fillStyle = '#0f172a';
@@ -522,6 +694,54 @@ export class GameRenderer {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(ox + ow / 2 - 1, oy + 4, 2, oh - 8);
         }
+      } else if (obj.type === 'teleport_pad') {
+        const isActive = obj.state !== false;
+        const isRecharging = !!(obj.cooldownTimer && obj.cooldownTimer > 0);
+        let glowColor = '#22d3ee';
+        let lightText = '#67e8f9';
+        if (obj.colorKey === 'magenta' || obj.colorKey === 'purple') {
+          glowColor = '#f0abfc';
+          lightText = '#fae8ff';
+        } else if (obj.colorKey === 'amber' || obj.colorKey === 'gold') {
+          glowColor = '#fbbf24';
+          lightText = '#fef3c7';
+        } else if (obj.colorKey === 'emerald') {
+          glowColor = '#34d399';
+          lightText = '#d1fae5';
+        }
+
+        if (isActive) {
+          // Vertical holographic column of light
+          const beamGrad = ctx.createLinearGradient(ox, oy + oh, ox, oy - 14);
+          const beamAlpha = isRecharging ? 0.08 : 0.25 + Math.sin(time * 5) * 0.08;
+          beamGrad.addColorStop(0, glowColor);
+          beamGrad.addColorStop(0.4, `rgba(255, 255, 255, ${beamAlpha})`);
+          beamGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          ctx.fillStyle = beamGrad;
+          ctx.fillRect(ox + 4, oy - 14, ow - 8, oh + 14);
+
+          // Top floating quantum chevron particles
+          const floatY = oy - 4 + Math.sin(time * 4) * 3;
+          ctx.strokeStyle = lightText;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(ox + ow / 2 - 4, floatY + 2);
+          ctx.lineTo(ox + ow / 2, floatY - 2);
+          ctx.lineTo(ox + ow / 2 + 4, floatY + 2);
+          ctx.stroke();
+        }
+
+        // Pad label and status badge
+        ctx.fillStyle = isActive ? (isRecharging ? '#f59e0b' : lightText) : '#94a3b8';
+        ctx.font = 'bold 7px "Share Tech Mono"';
+        ctx.textAlign = 'center';
+        const labelText = isRecharging
+          ? `RECHARGING (${obj.cooldownTimer?.toFixed(1)}s)`
+          : isActive
+          ? obj.label || 'WARP PAD'
+          : '[LOCKED]';
+        ctx.fillText(labelText, ox + ow / 2, oy + oh + 8);
       } else if (obj.type === 'echo_transfer_console') {
         // Echo Transfer Station Console
         ctx.fillStyle = '#0f172a';

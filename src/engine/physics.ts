@@ -107,6 +107,38 @@ export function tryPushCrate(
   if (!isPositionSolid(targetX, targetY, crate.width, crate.height, level, objects, crate.id, currentRoomState)) {
     crate.x = Math.round(targetX * 10) / 10;
     crate.y = Math.round(targetY * 10) / 10;
+
+    // Check if crate landed on an active teleport pad
+    const pad = objects.find(
+      (o) =>
+        o.type === 'teleport_pad' &&
+        o.state !== false &&
+        (!o.cooldownTimer || o.cooldownTimer <= 0) &&
+        Math.abs(o.x - crate.x) < 0.6 &&
+        Math.abs(o.y - crate.y) < 0.6
+    );
+    if (pad) {
+      const targetPad = objects.find(
+        (o) =>
+          o.type === 'teleport_pad' &&
+          o.id !== pad.id &&
+          (o.id === pad.linkedPadId || o.id === pad.linkedPodId || pad.linkedIds?.includes(o.id) || o.linkedPadId === pad.id)
+      );
+      if (
+        targetPad &&
+        targetPad.state !== false &&
+        !isPositionSolid(targetPad.x, targetPad.y, crate.width, crate.height, level, objects, crate.id, currentRoomState)
+      ) {
+        crate.x = targetPad.x;
+        crate.y = targetPad.y;
+        const cd = pad.cooldown || 1.2;
+        pad.cooldownTimer = cd;
+        targetPad.cooldownTimer = cd;
+        pad.animTimer = 0.6;
+        targetPad.animTimer = 0.6;
+      }
+    }
+
     return true;
   }
   return false;
@@ -171,6 +203,22 @@ export function updatePuzzleObjects(
       if (obj.cooldownTimer <= 0) {
         obj.cooldownTimer = 0;
         obj.state = false; // Decoy sonar pulse finishes
+      }
+    }
+
+    // Update Teleport Pad cooldown & animation timers
+    if (obj.type === 'teleport_pad') {
+      if (obj.cooldownTimer !== undefined && obj.cooldownTimer > 0) {
+        obj.cooldownTimer -= deltaTime;
+        if (obj.cooldownTimer <= 0) {
+          obj.cooldownTimer = 0;
+        }
+      }
+      if (obj.animTimer !== undefined && obj.animTimer > 0) {
+        obj.animTimer -= deltaTime;
+        if (obj.animTimer <= 0) {
+          obj.animTimer = 0;
+        }
       }
     }
   }
@@ -267,6 +315,15 @@ export function updatePuzzleObjects(
       const breaker = objects.find((o) => o.type === 'button' && o.linkedIds?.includes(obj.id));
       if (breaker) {
         obj.state = !breaker.state; // breaker active cuts hazard
+      }
+    }
+
+    if (obj.type === 'teleport_pad') {
+      const controllers = objects.filter((o) => o.linkedIds?.includes(obj.id));
+      if (controllers.length > 0) {
+        // Controlled by buttons/switches/plates
+        const allSatisfied = controllers.every((c) => !!c.state);
+        obj.state = allSatisfied;
       }
     }
   }

@@ -81,6 +81,7 @@ export class TimelineRecorder {
         echo.isMoving = false;
         echo.isHiding = false;
         echo.active = true;
+        (echo as any)._lastTranslocatedPadId = undefined;
       }
     }
   }
@@ -106,13 +107,22 @@ export class TimelineRecorder {
       const nextFrame = frames[frameIdx + 1];
 
       if (curFrame) {
+        const isDisplacement =
+          curFrame.action === 'teleport' ||
+          (nextFrame && Math.hypot(nextFrame.x - curFrame.x, nextFrame.y - curFrame.y) > 2.0);
+
         if (nextFrame && nextFrame.timestamp > curFrame.timestamp) {
           const t = Math.max(
             0,
             Math.min(1, (currentTimelineMs - curFrame.timestamp) / (nextFrame.timestamp - curFrame.timestamp))
           );
-          echo.x = curFrame.x + (nextFrame.x - curFrame.x) * t;
-          echo.y = curFrame.y + (nextFrame.y - curFrame.y) * t;
+          if (isDisplacement) {
+            echo.x = t >= 0.5 ? nextFrame.x : curFrame.x;
+            echo.y = t >= 0.5 ? nextFrame.y : curFrame.y;
+          } else {
+            echo.x = curFrame.x + (nextFrame.x - curFrame.x) * t;
+            echo.y = curFrame.y + (nextFrame.y - curFrame.y) * t;
+          }
           echo.dir = curFrame.dir;
           echo.isMoving = curFrame.isMoving;
           echo.isHiding = curFrame.isHiding;
@@ -125,11 +135,75 @@ export class TimelineRecorder {
         }
 
         // Execute recorded interaction action if triggered at this timestamp
-        if (curFrame.action !== 'none' && echo.lastAction !== curFrame.action) {
+        if (curFrame.action === 'teleport' && echo.lastAction !== 'teleport') {
+          echo.lastAction = 'teleport';
+          onSoundTrigger?.('teleport');
+          const pad = objects.find(
+            (o) =>
+              o.type === 'teleport_pad' &&
+              (o.id === curFrame.targetId ||
+                Math.hypot(o.x + o.width / 2 - (echo.x + 0.35), o.y + o.height / 2 - (echo.y + 0.35)) < 1.2)
+          );
+          if (pad) {
+            pad.animTimer = 0.6;
+            const targetPad = objects.find(
+              (o) =>
+                o.type === 'teleport_pad' &&
+                o.id !== pad.id &&
+                (o.id === pad.linkedPadId ||
+                  o.id === pad.linkedPodId ||
+                  pad.linkedIds?.includes(o.id) ||
+                  o.linkedPadId === pad.id)
+            );
+            if (targetPad) targetPad.animTimer = 0.6;
+          }
+        } else if (curFrame.action !== 'none' && echo.lastAction !== curFrame.action) {
           echo.lastAction = curFrame.action;
           this.executeEchoAction(echo, curFrame, level, objects, onSoundTrigger);
         } else if (curFrame.action === 'none') {
           echo.lastAction = 'none';
+        }
+
+        // Dynamic real-time Echo translocation if stepping onto an active teleport pad
+        for (const pad of objects) {
+          if (pad.type === 'teleport_pad' && pad.state !== false && (!pad.cooldownTimer || pad.cooldownTimer <= 0)) {
+            const padCenterX = pad.x + pad.width / 2;
+            const padCenterY = pad.y + pad.height / 2;
+            const echoCenterX = echo.x + 0.35;
+            const echoCenterY = echo.y + 0.35;
+            const dist = Math.hypot(padCenterX - echoCenterX, padCenterY - echoCenterY);
+
+            if (dist < 0.45 && (echo as any)._lastTranslocatedPadId !== pad.id) {
+              const targetPad = objects.find(
+                (o) =>
+                  o.type === 'teleport_pad' &&
+                  o.id !== pad.id &&
+                  (o.id === pad.linkedPadId ||
+                    o.id === pad.linkedPodId ||
+                    pad.linkedIds?.includes(o.id) ||
+                    o.linkedPadId === pad.id)
+              );
+              if (targetPad && targetPad.state !== false) {
+                const dx = targetPad.x + (targetPad.width - 0.7) / 2 - echo.x;
+                const dy = targetPad.y + (targetPad.height - 0.7) / 2 - echo.y;
+                echo.x += dx;
+                echo.y += dy;
+                // Shift subsequent recorded trajectory frames for remainder of timeline
+                for (let i = frameIdx + 1; i < echo.frames.length; i++) {
+                  echo.frames[i].x += dx;
+                  echo.frames[i].y += dy;
+                }
+                (echo as any)._lastTranslocatedPadId = targetPad.id;
+                const cd = pad.cooldown || 1.2;
+                pad.cooldownTimer = cd;
+                targetPad.cooldownTimer = cd;
+                pad.animTimer = 0.6;
+                targetPad.animTimer = 0.6;
+                onSoundTrigger?.('teleport');
+                break;
+              }
+            }
+          }
         }
       }
     }

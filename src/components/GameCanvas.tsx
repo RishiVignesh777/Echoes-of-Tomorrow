@@ -19,6 +19,8 @@ import { TimelineRecorder } from '../engine/recorder';
 import { isPositionSolid, tryPushCrate, updateParadoxAI, updatePuzzleObjects, TILE_SIZE } from '../engine/physics';
 import { soundManager } from '../audio/soundManager';
 import { HUD } from './HUD';
+import { TeleportPad, TeleportEvent } from './TeleportPad';
+import { formatKeyName } from '../utils/keyFormat';
 
 interface GameCanvasProps {
   currentLevelIndex: number;
@@ -65,6 +67,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const [isDead, setIsDead] = useState<boolean>(false);
   const [isChronalInsightActive, setIsChronalInsightActive] = useState<boolean>(false);
   const [chronalInsightBrief, setChronalInsightBrief] = useState<string | null>(null);
+  const [playerPos, setPlayerPos] = useState<{ x: number; y: number }>({
+    x: LEVELS[currentLevelIndex].playerSpawn.x,
+    y: LEVELS[currentLevelIndex].playerSpawn.y,
+  });
+  const [lastTeleportEvent, setLastTeleportEvent] = useState<TeleportEvent | null>(null);
 
   // Mutable Game Loop State
   const stateRef = useRef({
@@ -418,6 +425,66 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
   };
 
+  // Teleportation execution logic
+  const performTeleport = (pad: PuzzleObject, targetPad: PuzzleObject, isEcho: boolean = false, echoIndex?: number) => {
+    const s = stateRef.current;
+    if (!isEcho) {
+      s.player.x = targetPad.x + (targetPad.width - s.player.width) / 2;
+      s.player.y = targetPad.y + (targetPad.height - s.player.height) / 2;
+      setPlayerPos({ x: s.player.x, y: s.player.y });
+    }
+    const cd = pad.cooldown || 1.2;
+    pad.cooldownTimer = cd;
+    targetPad.cooldownTimer = cd;
+    pad.animTimer = 0.6;
+    targetPad.animTimer = 0.6;
+
+    soundManager.playTeleportPad();
+    if (settings.screenShake) {
+      s.screenShake = 8;
+    }
+
+    setLastTeleportEvent({
+      padId: pad.id,
+      targetId: targetPad.id,
+      timestamp: Date.now(),
+      isEcho,
+      echoIndex,
+    });
+
+    if (!isEcho) {
+      triggerNotification(`QUANTUM DISPLACEMENT: ${pad.label || 'PAD'} ➔ ${targetPad.label || 'DESTINATION'}`);
+      recorderRef.current.recordFrame(
+        s.timelineElapsedMs,
+        s.player.x,
+        s.player.y,
+        s.player.dir,
+        false,
+        'teleport',
+        pad.id
+      );
+    }
+  };
+
+  const handleTeleportRequest = (padId: string) => {
+    const s = stateRef.current;
+    if (s.isResetting || isDead) return;
+    const pad = s.objects.find((o) => o.id === padId && o.type === 'teleport_pad');
+    if (!pad || pad.state === false || (pad.cooldownTimer && pad.cooldownTimer > 0)) return;
+    const targetPad = s.objects.find(
+      (o) =>
+        o.type === 'teleport_pad' &&
+        o.id !== pad.id &&
+        (o.id === pad.linkedPadId ||
+          o.id === pad.linkedPodId ||
+          pad.linkedIds?.includes(o.id) ||
+          o.linkedPadId === pad.id)
+    );
+    if (targetPad && targetPad.state !== false) {
+      performTeleport(pad, targetPad, false);
+    }
+  };
+
   // Handle Player Interaction
   const handleInteract = () => {
     const s = stateRef.current;
@@ -466,6 +533,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             true
           );
           return;
+        }
+
+        // Teleport Pad manual interaction
+        if (obj.type === 'teleport_pad') {
+          if (obj.state !== false && (!obj.cooldownTimer || obj.cooldownTimer <= 0)) {
+            const targetPad = s.objects.find(
+              (o) =>
+                o.type === 'teleport_pad' &&
+                o.id !== obj.id &&
+                (o.id === obj.linkedPadId ||
+                  o.id === obj.linkedPodId ||
+                  obj.linkedIds?.includes(o.id) ||
+                  o.linkedPadId === obj.id)
+            );
+            if (targetPad && targetPad.state !== false) {
+              performTeleport(obj, targetPad, false);
+              return;
+            }
+          }
         }
 
         // Echo Transfer Console (Update 1.1)
@@ -627,6 +713,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   useEffect(() => {
     let animationFrameId: number;
     let lastTime = performance.now();
+    let lastPlayerPosSync = 0;
 
     const loop = (currentTime: number) => {
       const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
@@ -634,6 +721,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       const s = stateRef.current;
       const curLevel = LEVELS[currentLevelIndex];
+
+      // Sync player coordinates for UI/teleport widgets
+      if (currentTime - lastPlayerPosSync > 75) {
+        lastPlayerPosSync = currentTime;
+        setPlayerPos({ x: s.player.x, y: s.player.y });
+      }
 
       // 1. Update Countdown & Timeline Clock
       if (!s.isResetting && s.deathTimer <= 0) {
@@ -799,6 +892,31 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             s.playerHeatmap[tileKey] = (s.playerHeatmap[tileKey] || 0) + 1;
           }
         }
+
+        // Check if player stepped on active teleport pad
+        for (const pad of s.objects) {
+          if (pad.type === 'teleport_pad' && pad.state !== false && (!pad.cooldownTimer || pad.cooldownTimer <= 0)) {
+            const padCenterX = pad.x + pad.width / 2;
+            const padCenterY = pad.y + pad.height / 2;
+            const playerCenterX = s.player.x + s.player.width / 2;
+            const playerCenterY = s.player.y + s.player.height / 2;
+            if (Math.hypot(padCenterX - playerCenterX, padCenterY - playerCenterY) < 0.52) {
+              const targetPad = s.objects.find(
+                (o) =>
+                  o.type === 'teleport_pad' &&
+                  o.id !== pad.id &&
+                  (o.id === pad.linkedPadId ||
+                    o.id === pad.linkedPodId ||
+                    pad.linkedIds?.includes(o.id) ||
+                    o.linkedPadId === pad.id)
+              );
+              if (targetPad && targetPad.state !== false) {
+                performTeleport(pad, targetPad, false);
+                break;
+              }
+            }
+          }
+        }
       }
 
       // 3. Update Echoes Replay Engine
@@ -813,6 +931,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             if (sound === 'button_click') soundManager.playButtonClick();
             if (sound === 'crate_push') soundManager.playCratePush();
             if (sound === 'alarm_distraction') soundManager.playAlarmDistraction();
+            if (sound === 'teleport') {
+              soundManager.playTeleportPad();
+              setLastTeleportEvent({
+                padId: 'echo_pad',
+                targetId: 'echo_dest',
+                timestamp: Date.now(),
+                isEcho: true,
+              });
+            }
           }
         );
       }
@@ -1045,6 +1172,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         chronalInsightBrief={chronalInsightBrief}
         onTriggerChronalInsight={handleTriggerChronalInsight}
         keyBindings={settings.keyBindings}
+      />
+
+      {/* Teleport Pad Management & HUD Layer */}
+      <TeleportPad
+        objects={stateRef.current.objects}
+        playerPos={playerPos}
+        onTeleportRequest={handleTeleportRequest}
+        lastTeleportEvent={lastTeleportEvent}
+        interactKeyName={formatKeyName(settings.keyBindings?.interact || 'E')}
       />
 
       {/* Death Overlay Message */}
